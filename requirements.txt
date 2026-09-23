@@ -1,2 +1,4 @@
 compliance-trestle
 streamlit
+openai
+python-dotenv
