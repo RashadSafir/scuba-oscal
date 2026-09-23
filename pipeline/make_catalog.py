@@ -40,7 +40,7 @@ NIST = ("https://raw.githubusercontent.com/usnistgov/oscal-content/main/"
         "nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json")
 FIXED_TIME = datetime(2026, 9, 23, tzinfo=timezone.utc)  # fixed so reruns give identical files
 
-HERE = Path(__file__).resolve().parent          # controls_engineer/
+HERE = Path(__file__).resolve().parent          # pipeline/
 ROOT = HERE.parent                              # repo root
 AAD_MD = ROOT / "vendor" / "ScubaGear" / "PowerShell" / "ScubaGear" / "baselines" / "aad.md"
 NIST_CATALOG = ROOT / "vendor" / "NIST_SP-800-53_rev5_catalog.json"

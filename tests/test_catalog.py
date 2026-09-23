@@ -5,7 +5,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent   # controls_engineer/
+HERE = Path(__file__).resolve().parent   # tests/
 ROOT = HERE.parent                        # repo root
 CATALOG = ROOT / "oscal" / "catalog.json"
 
@@ -24,7 +24,7 @@ EXPECTED = {
 
 def build():
     CATALOG.unlink(missing_ok=True)   # so an empty or broken script can't pass on an old file
-    subprocess.run([sys.executable, str(HERE / "make_catalog.py")], cwd=ROOT, check=True,
+    subprocess.run([sys.executable, str(ROOT / "pipeline" / "make_catalog.py")], cwd=ROOT, check=True,
                    capture_output=True)
 
 
