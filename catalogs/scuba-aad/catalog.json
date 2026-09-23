@@ -1,0 +1,53 @@
+{
+  "catalog": {
+    "uuid": "e672117a-2e13-5b6a-8993-afca63822e08",
+    "metadata": {
+      "title": "CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline",
+      "last-modified": "2026-09-23T15:23:16.895+00:00",
+      "version": "0.1.0",
+      "oscal-version": "1.1.2"
+    },
+    "groups": [
+      {
+        "id": "ms.aad.1",
+        "title": "Legacy Authentication",
+        "controls": [
+          {
+            "id": "ms.aad.1.1v1",
+            "title": "Block legacy authentication",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.1.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-7",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-7"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.1.1v1_smt",
+                "name": "statement",
+                "prose": "Legacy authentication SHALL be blocked."
+              },
+              {
+                "id": "ms.aad.1.1v1_gdn",
+                "name": "guidance",
+                "prose": "Legacy authentication protocols do not support MFA. Blocking them reduces the impact of user credential theft."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
