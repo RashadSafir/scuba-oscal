@@ -222,3 +222,4 @@ vendor/
 vendor/
 .trestle/
 catalogs/
+mapping-collections/
