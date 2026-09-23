@@ -4,7 +4,7 @@
     "metadata": {
       "title": "CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline",
       "last-modified": "2026-09-23T00:00:00+00:00",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "oscal-version": "1.1.2"
     },
     "groups": [
@@ -43,6 +43,12 @@
                 "id": "ms.aad.1.1v1_gdn",
                 "name": "guidance",
                 "prose": "The security risk of allowing legacy authentication protocols is they do not support MFA. Blocking legacy protocols reduces the impact of user credential theft."
+              },
+              {
+                "id": "ms.aad.1.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. [Determine if an agency’s existing applications use legacy authentication](https://learn.microsoft.com/en-us/entra/identity/conditional-access/block-legacy-authentication#identify-legacy-authentication-use) before blocking legacy authentication across the entire application base.\n\n2. Create a Conditional Access policy to block legacy authentication\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Conditions > Client apps > Configure > <b>Yes</b> > Legacy authentication clients > Select only <b>Exchange ActiveSync clients</b> and <b>Other clients</b>\n\n  Access controls > Grant > <b>Block Access</b>\n</pre>"
               }
             ]
           }
@@ -88,6 +94,12 @@
                 "id": "ms.aad.2.1v1_gdn",
                 "name": "guidance",
                 "prose": "Blocking high-risk users may prevent compromised accounts from accessing the tenant."
+              },
+              {
+                "id": "ms.aad.2.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Create a conditional access policy blocking users categorized as high risk by the Identity Protection service. Configure the following policy settings in the new conditional access policy as per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Conditions > User risk > <b>High</b>\n\n  Access controls > Grant > <b>Block Access</b>\n</pre>"
               }
             ]
           },
@@ -127,6 +139,12 @@
                 "id": "ms.aad.2.3v1_gdn",
                 "name": "guidance",
                 "prose": "This prevents compromised accounts from accessing the tenant."
+              },
+              {
+                "id": "ms.aad.2.3v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Create a Conditional Access policy blocking sign-ins determined high risk by the Identity Protection service. Configure the following policy settings in the new Conditional Access policy as per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Conditions > Sign-in risk > <b>High</b>\n\n  Access controls > Grant > <b>Block Access</b>\n</pre>"
               }
             ]
           }
@@ -172,6 +190,12 @@
                 "id": "ms.aad.3.8v1_gdn",
                 "name": "guidance",
                 "prose": "Reduce risk of an adversary using stolen user credentials and then registering their own MFA device to access the tenant by requiring a managed device provisioned and controlled by the agency to perform registration actions. This prevents the adversary from using their own unmanaged device to perform the registration."
+              },
+              {
+                "id": "ms.aad.3.8v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Create a conditional access policy requiring a user to be on a managed device when registering for MFA. Configure the following policy settings in the new conditional access policy, per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > User actions > <b>Register security information</b>\n\n  Access controls > Grant > Grant Access > <b>Require device to be marked as compliant</b> and <b>Require Microsoft Entra ID hybrid joined device</b> > For multiple controls > <b>Require one of the selected controls</b>\n</pre>"
               }
             ]
           }
@@ -217,6 +241,12 @@
                 "id": "ms.aad.5.2v1_gdn",
                 "name": "guidance",
                 "prose": "Restricting user consent for applications reduces risk of users giving insecure applications access to their data via [consent grant attacks](https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/detect-and-remediate-illicit-consent-grants?view=o365-worldwide)."
+              },
+              {
+                "id": "ms.aad.5.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "There are a couple of configuration options to restrict user consent. Each option is described below, followed by its respective instructions.\n\n- **Option 1** - Most restrictive - Do not allow user consent for applications. An administrator is required to consent for all applications. Users can submit requests to use an application via the admin consent workflow but they cannot perform the consent themselves.\n- **Option 2** - More flexible - Allow users to consent to applications from Microsoft verified publishers that use low-risk permissions. When selecting this option, an administrator must configure a set of permissions considered low risk in the **Consent and permissions** > **Permission classifications** page in the Microsoft Entra admin center.\n\n**Option 1**. Do not allow user consent.\n\n1.  In **Microsoft Entra admin center** select **Enterprise Applications**.\n\n2. Under **Security**, select **Consent and permissions**. Then select **User Consent Settings**.\n\n3. Under **User consent for applications**, select **Do not allow user consent**.\n\n4. Click **Save**.\n\n**Option 2**. Allow restricted user consent.\n\n1.  In **Microsoft Entra admin center** select **Enterprise apps**.\n\n2. Under **Security**, select **Consent and permissions**. Then select **User Consent Settings**.\n\n3. Under **User consent for applications**, select **Allow user consent for apps from verified publishers, for selected permissions**.\n\n4. Click **Save**.\n\n5. In the page navigation menu, select **Permission classifications**.\n\n6. Click on the **Low** tab.\n\n7. [Add a list of low risk application permissions that users will be able to consent to](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-permission-classifications). We recommend only including permissions that provide minimal access to a user's data. For a reference of permissions that are considered risky and should be avoided [go to this JSON file and examine the permissions listed](https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/schemas/RiskyAppPermissions.json) in the **Delegated** sections under Microsoft Graph and other apps."
               }
             ]
           }
@@ -257,6 +287,12 @@
                 "id": "ms.aad.7.1v1_gdn",
                 "name": "guidance",
                 "prose": "The Global Administrator role provides unfettered access to the tenant. Limiting the number of users with this level of access makes tenant compromise more challenging. Microsoft recommends fewer than five users in the Global Administrator role. However, additional user accounts, up to eight, may be necessary to support emergency access and some operational scenarios."
+              },
+              {
+                "id": "ms.aad.7.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "When counting the number of users assigned to the Global Administrator role, count each user only once.\n\n1. In **Microsoft Entra admin center**  count the number of users assigned to the **Global Administrator** role. Count users that are assigned directly to the role and users assigned via group membership. If you have Microsoft Entra ID PIM, count both the **Eligible assignments** and **Active assignments**. If any of the groups assigned to Global Administrator are enrolled in PIM for Groups, also count the number of group members from the PIM for Groups portal **Eligible** assignments.\n\n2. Validate that there are a total of two to eight users assigned to the Global Administrator role."
               }
             ]
           },
@@ -291,6 +327,12 @@
                 "id": "ms.aad.7.4v1_gdn",
                 "name": "guidance",
                 "prose": "Instead of giving users permanent assignments to privileged roles, provisioning access just in time lessens exposure if those accounts become compromised. In Microsoft Entra ID PIM or an alternative PAM system, just in time access can be provisioned by assigning users to roles as eligible instead of perpetually active."
+              },
+              {
+                "id": "ms.aad.7.4v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. In **Microsoft Entra admin center**  select **Roles and admins**. Perform the steps below for each highly privileged role. We reference the Global Administrator role as an example.\n\n2. Select the **Global Administrator** role.\n\n3. Under **Manage**, select **Assignments** and click the **Active assignments** tab.\n\n4. Verify there are no users or groups with a value of **Permanent** in the **End time** column. If there are any, recreate those assignments to have an expiration date using Microsoft Entra ID PIM or an alternative PAM system. If a group is identified and it is enrolled in PIM for Groups, see the exception cases below for details.\n\nException cases:\n- Emergency access accounts that require perpetual active assignment.\n- Service accounts that require perpetual active assignment.\n- If using PIM for Groups, a group that is enrolled in PIM is allowed to have a perpetual active assignment to a role because activation is handled by PIM for Groups."
               }
             ]
           }
@@ -331,6 +373,12 @@
                 "id": "ms.aad.8.1v1_gdn",
                 "name": "guidance",
                 "prose": "Limiting the amount of object information available to guest users in the tenant, reduces malicious reconnaissance exposure if a guest account is compromised or created by an adversary."
+              },
+              {
+                "id": "ms.aad.8.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. In **Microsoft Entra admin center**  select **External Identities > External collaboration settings**.\n\n2. Under **Guest user access**, select either **Guest users have limited access to properties and memberships of directory objects** or **Guest user access is restricted to properties and memberships of their own directory objects (most restrictive)**.\n\n3. Click **Save**."
               }
             ]
           }
