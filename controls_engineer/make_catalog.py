@@ -1,5 +1,10 @@
 """Build the SCuBA MS.AAD OSCAL catalog from aad.md.
 
+Inputs : vendor/ScubaGear/PowerShell/ScubaGear/baselines/aad.md
+         vendor/NIST_SP-800-53_rev5_catalog.json   (used to check every 800-53 link target exists)
+Output : oscal/catalog.json
+Contract: docs/CONTRACTS.md
+
 ID convention (team contract, do not change):
   control id   = policy id lowercased           MS.AAD.1.1v1 -> ms.aad.1.1v1
   statement id = control id + "_smt"            ms.aad.1.1v1_smt   (findings point here)
@@ -7,6 +12,7 @@ ID convention (team contract, do not change):
   group id     = "ms.aad." + section number     ms.aad.1
   obligation   = prop name="obligation", value SHALL | SHALL NOT | SHOULD
 """
+import json
 import re
 import uuid
 from datetime import datetime, timezone
@@ -35,6 +41,9 @@ FIXED_TIME = datetime(2026, 9, 23, tzinfo=timezone.utc)  # fixed so reruns give 
 
 HERE = Path(__file__).resolve().parent          # controls_engineer/
 ROOT = HERE.parent                              # repo root
+AAD_MD = ROOT / "vendor" / "ScubaGear" / "PowerShell" / "ScubaGear" / "baselines" / "aad.md"
+NIST_CATALOG = ROOT / "vendor" / "NIST_SP-800-53_rev5_catalog.json"
+OUT = ROOT / "oscal" / "catalog.json"
 
 
 # ---------- Step 1: read aad.md into simple records ----------
@@ -84,6 +93,19 @@ def nist_anchor(ref):
     return f"{fam.lower()}-{num}" + (f".{enh}" if enh else "")
 
 
+def load_nist_ids(path):
+    """Every control and enhancement id in the NIST 800-53 Rev 5 catalog (e.g. 'ac-2', 'ac-2.12')."""
+    ids = set()
+    def walk(node):
+        for c in node.get("controls", []):
+            ids.add(c["id"])
+            walk(c)
+        for g in node.get("groups", []):
+            walk(g)
+    walk(json.loads(path.read_text(encoding="utf-8"))["catalog"])
+    return ids
+
+
 def build_control(r):
     cid = r["id"].lower()
     return Control(
@@ -99,11 +121,19 @@ def build_control(r):
 
 
 def main():
-    sections, records = parse_aad((HERE / "aad.md").read_text(encoding="utf-8"))
+    for f in (AAD_MD, NIST_CATALOG):
+        if not f.exists():
+            raise SystemExit(f"Missing input: {f.relative_to(ROOT)}")
+    sections, records = parse_aad(AAD_MD.read_text(encoding="utf-8"))
+    nist_ids = load_nist_ids(NIST_CATALOG)
     chosen = [r for r in records if r["id"] in SCOPE]
     missing = set(SCOPE) - {r["id"] for r in chosen}
     if missing:
         raise SystemExit(f"Not found in aad.md (check version suffix): {sorted(missing)}")
+    for r in chosen:
+        bad = [n for n in r["nist_80053"] if nist_anchor(n) not in nist_ids]
+        if bad:
+            raise SystemExit(f"{r['id']}: 800-53 ids not in NIST catalog: {bad}")
 
     groups = []
     for sec in sorted({r["section"] for r in chosen}, key=int):
@@ -116,7 +146,7 @@ def main():
                           last_modified=FIXED_TIME, version="0.2.0", oscal_version="1.1.2"),
         groups=groups,
     )
-    out = ROOT / "catalogs" / "scuba-aad" / "catalog.json"
+    out = OUT
     out.parent.mkdir(parents=True, exist_ok=True)
     cat.oscal_write(out)
     for r in chosen:
