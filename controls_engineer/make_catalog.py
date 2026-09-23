@@ -8,7 +8,8 @@ Contract: docs/CONTRACTS.md
 ID convention (team contract, do not change):
   control id   = policy id lowercased           MS.AAD.1.1v1 -> ms.aad.1.1v1
   statement id = control id + "_smt"            ms.aad.1.1v1_smt   (findings point here)
-  guidance id  = control id + "_gdn"            ms.aad.1.1v1_gdn
+  guidance id  = control id + "_gdn"            ms.aad.1.1v1_gdn   (rationale: why it matters)
+  remediation  = control id + "_rem"            ms.aad.1.1v1_rem   (how to fix: the aad.md Instructions)
   group id     = "ms.aad." + section number     ms.aad.1
   obligation   = prop name="obligation", value SHALL | SHALL NOT | SHOULD
 """
@@ -58,7 +59,7 @@ def parse_aad(text):
             section = m.group(1)
             sections[section] = m.group(2).strip()
             continue
-        m = re.match(r"^#### (MS\.AAD\.\d+\.\d+v\d+)$", line)  # policy heading (not "Instructions")
+        m = re.match(r"^####\s+(MS\.AAD\.\d+\.\d+v\d+)\s*$", line)  # policy heading (not "Instructions")
         if not m:
             continue
         pid = m.group(1)
@@ -82,7 +83,32 @@ def parse_aad(text):
             obligation = "SHOULD"
         records.append(dict(id=pid, section=section, statement=statement,
                             rationale=rationale, obligation=obligation, nist_80053=nist))
+    instructions = parse_instructions(lines)
+    for r in records:
+        r["remediation"] = instructions.get(r["id"], "")
     return sections, records
+
+
+def parse_instructions(lines):
+    """Text under each '#### MS.AAD.x.yvN Instructions' heading, up to the next heading.
+    Lines starting with '#' inside ``` code blocks (e.g. PowerShell comments) are not headings."""
+    found = {}
+    current, buf, in_code = None, [], False
+    def flush():
+        if current:
+            found[current] = "\n".join(buf).strip()
+    for line in lines:
+        if line.startswith("```"):
+            in_code = not in_code
+        if not in_code and line.startswith("#"):
+            flush()
+            m = re.match(r"^####\s+(MS\.AAD\.\d+\.\d+v\d+)\s+Instructions\s*$", line)
+            current, buf = (m.group(1) if m else None), []
+            continue
+        if current:
+            buf.append(line)
+    flush()
+    return found
 
 
 # ---------- Step 2: turn records into OSCAL ----------
@@ -116,7 +142,8 @@ def build_control(r):
         links=[Link(href=f"{NIST}#{nist_anchor(n)}", rel="related",
                     text=f"NIST SP 800-53 Rev 5 {n}") for n in r["nist_80053"]],
         parts=[Part(id=f"{cid}_smt", name="statement", prose=r["statement"]),
-               Part(id=f"{cid}_gdn", name="guidance", prose=r["rationale"])],
+               Part(id=f"{cid}_gdn", name="guidance", prose=r["rationale"]),
+               Part(id=f"{cid}_rem", name="remediation", ns=PROP_NS, prose=r["remediation"])],
     )
 
 
@@ -131,6 +158,8 @@ def main():
     if missing:
         raise SystemExit(f"Not found in aad.md (check version suffix): {sorted(missing)}")
     for r in chosen:
+        if not r["remediation"]:
+            raise SystemExit(f"{r['id']}: no Instructions section found in aad.md")
         bad = [n for n in r["nist_80053"] if nist_anchor(n) not in nist_ids]
         if bad:
             raise SystemExit(f"{r['id']}: 800-53 ids not in NIST catalog: {bad}")
@@ -143,7 +172,7 @@ def main():
     cat = Catalog(
         uuid=str(uuid.uuid5(NS, "catalog:ms.aad")),
         metadata=Metadata(title="CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline",
-                          last_modified=FIXED_TIME, version="0.2.0", oscal_version="1.1.2"),
+                          last_modified=FIXED_TIME, version="0.3.0", oscal_version="1.1.2"),
         groups=groups,
     )
     out = OUT

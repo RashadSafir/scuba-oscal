@@ -51,11 +51,18 @@ def test_has_exactly_the_scoped_controls():
     assert set(controls()) == set(EXPECTED)
 
 
-def test_every_control_has_statement_and_guidance_ids():
+def test_every_control_has_statement_guidance_remediation_ids():
     for cid, c in controls().items():
         part_ids = {p["id"] for p in c["parts"]}
         assert f"{cid}_smt" in part_ids, f"{cid} is missing its statement part"
         assert f"{cid}_gdn" in part_ids, f"{cid} is missing its guidance part"
+        assert f"{cid}_rem" in part_ids, f"{cid} is missing its remediation part"
+
+
+def test_every_control_has_remediation_text():
+    for cid, c in controls().items():
+        rem = next(p for p in c["parts"] if p["id"] == f"{cid}_rem")
+        assert len(rem.get("prose", "")) > 20, f"{cid} remediation text is empty"
 
 
 def test_obligations_are_correct():
