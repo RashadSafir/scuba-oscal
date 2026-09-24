@@ -1,0 +1,110 @@
+{
+  "assessment-plan": {
+    "uuid": "46a2b135-9d76-54b5-a27f-3555a9636db1",
+    "metadata": {
+      "title": "SCuBA Microsoft Entra ID (MS.AAD) Assessment Plan",
+      "last-modified": "2026-09-24T00:09:06+00:00",
+      "version": "0.1.0",
+      "oscal-version": "1.1.2",
+      "links": [
+        {
+          "href": "catalog.json",
+          "rel": "reference",
+          "text": "CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline"
+        }
+      ]
+    },
+    "import-ssp": {
+      "href": "./system-security-plan.json",
+      "remarks": "External placeholder: the system owner's SSP has not been supplied."
+    },
+    "reviewed-controls": {
+      "control-selections": [
+        {
+          "include-controls": [
+            {
+              "control-id": "ms.aad.1.1v1",
+              "statement-ids": [
+                "ms.aad.1.1v1_smt"
+              ]
+            },
+            {
+              "control-id": "ms.aad.2.1v1",
+              "statement-ids": [
+                "ms.aad.2.1v1_smt"
+              ]
+            },
+            {
+              "control-id": "ms.aad.2.3v1",
+              "statement-ids": [
+                "ms.aad.2.3v1_smt"
+              ]
+            },
+            {
+              "control-id": "ms.aad.3.8v1",
+              "statement-ids": [
+                "ms.aad.3.8v1_smt"
+              ]
+            },
+            {
+              "control-id": "ms.aad.5.2v1",
+              "statement-ids": [
+                "ms.aad.5.2v1_smt"
+              ]
+            },
+            {
+              "control-id": "ms.aad.7.1v1",
+              "statement-ids": [
+                "ms.aad.7.1v1_smt"
+              ]
+            },
+            {
+              "control-id": "ms.aad.7.4v1",
+              "statement-ids": [
+                "ms.aad.7.4v1_smt"
+              ]
+            },
+            {
+              "control-id": "ms.aad.8.1v1",
+              "statement-ids": [
+                "ms.aad.8.1v1_smt"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "assessment-assets": {
+      "components": [
+        {
+          "uuid": "8ca1dd46-acec-56db-b780-c3097edcb9e1",
+          "type": "software",
+          "title": "CISA ScubaGear",
+          "description": "The tool that runs the SCuBA baseline checks and produces the results report (ScubaResults.json) this assessment is built from.",
+          "status": {
+            "state": "operational"
+          }
+        }
+      ],
+      "assessment-platforms": [
+        {
+          "uuid": "26c9a625-165a-58bb-a540-2afbb2060f4d",
+          "title": "ScubaGear",
+          "uses-components": [
+            {
+              "component-uuid": "8ca1dd46-acec-56db-b780-c3097edcb9e1"
+            }
+          ]
+        }
+      ]
+    },
+    "tasks": [
+      {
+        "uuid": "decf1d4d-34c9-5c28-bcd0-e412b4f4d63e",
+        "type": "action",
+        "title": "Run ScubaGear and evaluate the results",
+        "description": "Run ScubaGear against the tenant, then check each in-scope policy in 'CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline' against its result (method: TEST)."
+      }
+    ]
+  }
+}

@@ -1,0 +1,376 @@
+{
+  "plan-of-action-and-milestones": {
+    "uuid": "098f2bd9-b23b-56d3-9a00-648b23fd5c72",
+    "metadata": {
+      "title": "SCuBA Microsoft Entra ID (MS.AAD) Plan of Action and Milestones",
+      "last-modified": "2026-09-24T00:09:06+00:00",
+      "version": "0.1.0",
+      "oscal-version": "1.1.2",
+      "links": [
+        {
+          "href": "assessment-results.json",
+          "rel": "reference",
+          "text": "Assessment results this POA&M was built from"
+        },
+        {
+          "href": "catalog.json",
+          "rel": "reference",
+          "text": "CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline"
+        }
+      ]
+    },
+    "observations": [
+      {
+        "uuid": "a29f89d9-e68b-55bb-a736-385bb953b563",
+        "title": "MS.AAD.3.8v1 check: Require managed devices to register MFA",
+        "description": "0 conditional access policy(s) found that meet(s) all requirements.",
+        "props": [
+          {
+            "name": "scuba-policy-id",
+            "ns": "https://scuba.example/ns",
+            "value": "MS.AAD.3.8v1"
+          },
+          {
+            "name": "scuba-result",
+            "ns": "https://scuba.example/ns",
+            "value": "Warning"
+          },
+          {
+            "name": "scuba-criticality",
+            "ns": "https://scuba.example/ns",
+            "value": "Should"
+          },
+          {
+            "name": "scuba-product",
+            "ns": "https://scuba.example/ns",
+            "value": "AAD"
+          }
+        ],
+        "methods": [
+          "TEST"
+        ],
+        "types": [
+          "finding"
+        ],
+        "relevant-evidence": [
+          {
+            "href": "scuba_results_sample.json",
+            "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 3 (Strong Authentication and a Secure Registration Process): Result Warning."
+          }
+        ],
+        "collected": "2026-05-04T17:15:48+00:00"
+      },
+      {
+        "uuid": "c73c579d-eb6b-500b-a4fa-2dc1a180eca3",
+        "title": "MS.AAD.5.2v1 check: Restrict user consent to applications",
+        "description": "1 authorization policies found that allow non-admin users to consent to third-party applications with risky delegated permission classifications: authorizationPolicy",
+        "props": [
+          {
+            "name": "scuba-policy-id",
+            "ns": "https://scuba.example/ns",
+            "value": "MS.AAD.5.2v1"
+          },
+          {
+            "name": "scuba-result",
+            "ns": "https://scuba.example/ns",
+            "value": "Fail"
+          },
+          {
+            "name": "scuba-criticality",
+            "ns": "https://scuba.example/ns",
+            "value": "Shall"
+          },
+          {
+            "name": "scuba-product",
+            "ns": "https://scuba.example/ns",
+            "value": "AAD"
+          }
+        ],
+        "methods": [
+          "TEST"
+        ],
+        "types": [
+          "finding"
+        ],
+        "relevant-evidence": [
+          {
+            "href": "scuba_results_sample.json",
+            "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 5 (Application Registration and Consent): Result Fail."
+          }
+        ],
+        "collected": "2026-05-04T17:15:48+00:00"
+      },
+      {
+        "uuid": "b44ea913-044d-50ae-84da-1e41eae33ff1",
+        "title": "MS.AAD.7.4v1 check: No permanent active privileged role assignments",
+        "description": "6 role(s) that contain users with permanent active assignment: Application Administrator, Cloud Application Administrator, Exchange Administrator, Global Administrator, SharePoint Administrator, User Administrator",
+        "props": [
+          {
+            "name": "scuba-policy-id",
+            "ns": "https://scuba.example/ns",
+            "value": "MS.AAD.7.4v1"
+          },
+          {
+            "name": "scuba-result",
+            "ns": "https://scuba.example/ns",
+            "value": "Fail"
+          },
+          {
+            "name": "scuba-criticality",
+            "ns": "https://scuba.example/ns",
+            "value": "Shall"
+          },
+          {
+            "name": "scuba-product",
+            "ns": "https://scuba.example/ns",
+            "value": "AAD"
+          }
+        ],
+        "methods": [
+          "TEST"
+        ],
+        "types": [
+          "finding"
+        ],
+        "relevant-evidence": [
+          {
+            "href": "scuba_results_sample.json",
+            "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 7 (Highly Privileged User Access): Result Fail."
+          }
+        ],
+        "collected": "2026-05-04T17:15:48+00:00"
+      }
+    ],
+    "risks": [
+      {
+        "uuid": "23ac85ec-fb37-5956-af24-8fdaaf23a807",
+        "title": "Risk: Require managed devices to register MFA",
+        "description": "MS.AAD.3.8v1 was not met in this scan (Warning). 0 conditional access policy(s) found that meet(s) all requirements.",
+        "statement": "Reduce risk of an adversary using stolen user credentials and then registering their own MFA device to access the tenant by requiring a managed device provisioned and controlled by the agency to perform registration actions. This prevents the adversary from using their own unmanaged device to perform the registration.",
+        "status": "open",
+        "remediations": [
+          {
+            "uuid": "f2a4b072-81ed-5b16-a014-afefdf7bfbbf",
+            "lifecycle": "recommendation",
+            "title": "Remediation for MS.AAD.3.8v1",
+            "description": "1. Create a conditional access policy requiring a user to be on a managed device when registering for MFA. Configure the following policy settings in the new conditional access policy, per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > User actions > <b>Register security information</b>\n\n  Access controls > Grant > Grant Access > <b>Require device to be marked as compliant</b> and <b>Require Microsoft Entra ID hybrid joined device</b> > For multiple controls > <b>Require one of the selected controls</b>\n</pre>"
+          }
+        ],
+        "related-observations": [
+          {
+            "observation-uuid": "a29f89d9-e68b-55bb-a736-385bb953b563"
+          }
+        ]
+      },
+      {
+        "uuid": "b660cad9-4711-5425-827d-69438ba33942",
+        "title": "Risk: Restrict user consent to applications",
+        "description": "MS.AAD.5.2v1 was not met in this scan (Fail). 1 authorization policies found that allow non-admin users to consent to third-party applications with risky delegated permission classifications: authorizationPolicy",
+        "statement": "Restricting user consent for applications reduces risk of users giving insecure applications access to their data via [consent grant attacks](https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/detect-and-remediate-illicit-consent-grants?view=o365-worldwide).",
+        "status": "open",
+        "remediations": [
+          {
+            "uuid": "20e5739e-1e78-51e7-8e07-bf47a6b7d40e",
+            "lifecycle": "recommendation",
+            "title": "Remediation for MS.AAD.5.2v1",
+            "description": "There are a couple of configuration options to restrict user consent. Each option is described below, followed by its respective instructions.\n\n- **Option 1** - Most restrictive - Do not allow user consent for applications. An administrator is required to consent for all applications. Users can submit requests to use an application via the admin consent workflow but they cannot perform the consent themselves.\n- **Option 2** - More flexible - Allow users to consent to applications from Microsoft verified publishers that use low-risk permissions. When selecting this option, an administrator must configure a set of permissions considered low risk in the **Consent and permissions** > **Permission classifications** page in the Microsoft Entra admin center.\n\n**Option 1**. Do not allow user consent.\n\n1.  In **Microsoft Entra admin center** select **Enterprise Applications**.\n\n2. Under **Security**, select **Consent and permissions**. Then select **User Consent Settings**.\n\n3. Under **User consent for applications**, select **Do not allow user consent**.\n\n4. Click **Save**.\n\n**Option 2**. Allow restricted user consent.\n\n1.  In **Microsoft Entra admin center** select **Enterprise apps**.\n\n2. Under **Security**, select **Consent and permissions**. Then select **User Consent Settings**.\n\n3. Under **User consent for applications**, select **Allow user consent for apps from verified publishers, for selected permissions**.\n\n4. Click **Save**.\n\n5. In the page navigation menu, select **Permission classifications**.\n\n6. Click on the **Low** tab.\n\n7. [Add a list of low risk application permissions that users will be able to consent to](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-permission-classifications). We recommend only including permissions that provide minimal access to a user's data. For a reference of permissions that are considered risky and should be avoided [go to this JSON file and examine the permissions listed](https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/schemas/RiskyAppPermissions.json) in the **Delegated** sections under Microsoft Graph and other apps."
+          }
+        ],
+        "related-observations": [
+          {
+            "observation-uuid": "c73c579d-eb6b-500b-a4fa-2dc1a180eca3"
+          }
+        ]
+      },
+      {
+        "uuid": "ef482384-23f0-58e7-9a2c-0ccdb602936b",
+        "title": "Risk: No permanent active privileged role assignments",
+        "description": "MS.AAD.7.4v1 was not met in this scan (Fail). 6 role(s) that contain users with permanent active assignment: Application Administrator, Cloud Application Administrator, Exchange Administrator, Global Administrator, SharePoint Administrator, User Administrator",
+        "statement": "Instead of giving users permanent assignments to privileged roles, provisioning access just in time lessens exposure if those accounts become compromised. In Microsoft Entra ID PIM or an alternative PAM system, just in time access can be provisioned by assigning users to roles as eligible instead of perpetually active.",
+        "status": "open",
+        "remediations": [
+          {
+            "uuid": "6baba7fa-379f-549c-bb8a-2414ff8ee054",
+            "lifecycle": "recommendation",
+            "title": "Remediation for MS.AAD.7.4v1",
+            "description": "1. In **Microsoft Entra admin center**  select **Roles and admins**. Perform the steps below for each highly privileged role. We reference the Global Administrator role as an example.\n\n2. Select the **Global Administrator** role.\n\n3. Under **Manage**, select **Assignments** and click the **Active assignments** tab.\n\n4. Verify there are no users or groups with a value of **Permanent** in the **End time** column. If there are any, recreate those assignments to have an expiration date using Microsoft Entra ID PIM or an alternative PAM system. If a group is identified and it is enrolled in PIM for Groups, see the exception cases below for details.\n\nException cases:\n- Emergency access accounts that require perpetual active assignment.\n- Service accounts that require perpetual active assignment.\n- If using PIM for Groups, a group that is enrolled in PIM is allowed to have a perpetual active assignment to a role because activation is handled by PIM for Groups."
+          }
+        ],
+        "related-observations": [
+          {
+            "observation-uuid": "b44ea913-044d-50ae-84da-1e41eae33ff1"
+          }
+        ]
+      }
+    ],
+    "findings": [
+      {
+        "uuid": "9608cafc-d70b-5e6b-bd31-85be980bc4bd",
+        "title": "MS.AAD.3.8v1 not satisfied",
+        "description": "0 conditional access policy(s) found that meet(s) all requirements.",
+        "target": {
+          "type": "statement-id",
+          "target-id": "ms.aad.3.8v1_smt",
+          "status": {
+            "state": "not-satisfied",
+            "reason": "fail"
+          }
+        },
+        "related-observations": [
+          {
+            "observation-uuid": "a29f89d9-e68b-55bb-a736-385bb953b563"
+          }
+        ],
+        "related-risks": [
+          {
+            "risk-uuid": "23ac85ec-fb37-5956-af24-8fdaaf23a807"
+          }
+        ]
+      },
+      {
+        "uuid": "d18f7ffb-f0cb-5b93-8289-b2c5a2806bf8",
+        "title": "MS.AAD.5.2v1 not satisfied",
+        "description": "1 authorization policies found that allow non-admin users to consent to third-party applications with risky delegated permission classifications: authorizationPolicy",
+        "target": {
+          "type": "statement-id",
+          "target-id": "ms.aad.5.2v1_smt",
+          "status": {
+            "state": "not-satisfied",
+            "reason": "fail"
+          }
+        },
+        "related-observations": [
+          {
+            "observation-uuid": "c73c579d-eb6b-500b-a4fa-2dc1a180eca3"
+          }
+        ],
+        "related-risks": [
+          {
+            "risk-uuid": "b660cad9-4711-5425-827d-69438ba33942"
+          }
+        ]
+      },
+      {
+        "uuid": "85fa0fbd-8c33-5296-a0f6-93bc420c343b",
+        "title": "MS.AAD.7.4v1 not satisfied",
+        "description": "6 role(s) that contain users with permanent active assignment: Application Administrator, Cloud Application Administrator, Exchange Administrator, Global Administrator, SharePoint Administrator, User Administrator",
+        "target": {
+          "type": "statement-id",
+          "target-id": "ms.aad.7.4v1_smt",
+          "status": {
+            "state": "not-satisfied",
+            "reason": "fail"
+          }
+        },
+        "related-observations": [
+          {
+            "observation-uuid": "b44ea913-044d-50ae-84da-1e41eae33ff1"
+          }
+        ],
+        "related-risks": [
+          {
+            "risk-uuid": "ef482384-23f0-58e7-9a2c-0ccdb602936b"
+          }
+        ]
+      }
+    ],
+    "poam-items": [
+      {
+        "uuid": "84bb5e9d-75b9-571f-b780-6716af4d3712",
+        "title": "MS.AAD.3.8v1: Require managed devices to register MFA",
+        "description": "Managed Devices SHOULD be required to register MFA. Not met in the scan: 0 conditional access policy(s) found that meet(s) all requirements.",
+        "props": [
+          {
+            "name": "priority",
+            "ns": "https://scuba.example/ns",
+            "value": "moderate"
+          },
+          {
+            "name": "obligation",
+            "ns": "https://scuba.example/ns",
+            "value": "SHOULD"
+          }
+        ],
+        "related-findings": [
+          {
+            "finding-uuid": "9608cafc-d70b-5e6b-bd31-85be980bc4bd"
+          }
+        ],
+        "related-observations": [
+          {
+            "observation-uuid": "a29f89d9-e68b-55bb-a736-385bb953b563"
+          }
+        ],
+        "related-risks": [
+          {
+            "risk-uuid": "23ac85ec-fb37-5956-af24-8fdaaf23a807"
+          }
+        ]
+      },
+      {
+        "uuid": "700411c5-e7e7-5482-b058-75b2db879121",
+        "title": "MS.AAD.5.2v1: Restrict user consent to applications",
+        "description": "User consent to applications SHALL be restricted. Not met in the scan: 1 authorization policies found that allow non-admin users to consent to third-party applications with risky delegated permission classifications: authorizationPolicy",
+        "props": [
+          {
+            "name": "priority",
+            "ns": "https://scuba.example/ns",
+            "value": "high"
+          },
+          {
+            "name": "obligation",
+            "ns": "https://scuba.example/ns",
+            "value": "SHALL"
+          }
+        ],
+        "related-findings": [
+          {
+            "finding-uuid": "d18f7ffb-f0cb-5b93-8289-b2c5a2806bf8"
+          }
+        ],
+        "related-observations": [
+          {
+            "observation-uuid": "c73c579d-eb6b-500b-a4fa-2dc1a180eca3"
+          }
+        ],
+        "related-risks": [
+          {
+            "risk-uuid": "b660cad9-4711-5425-827d-69438ba33942"
+          }
+        ]
+      },
+      {
+        "uuid": "09116ac5-8b89-5328-b95a-6979b75d947d",
+        "title": "MS.AAD.7.4v1: No permanent active privileged role assignments",
+        "description": "Permanent active role assignments SHALL NOT be allowed for highly privileged roles. Not met in the scan: 6 role(s) that contain users with permanent active assignment: Application Administrator, Cloud Application Administrator, Exchange Administrator, Global Administrator, SharePoint Administrator, User Administrator",
+        "props": [
+          {
+            "name": "priority",
+            "ns": "https://scuba.example/ns",
+            "value": "high"
+          },
+          {
+            "name": "obligation",
+            "ns": "https://scuba.example/ns",
+            "value": "SHALL NOT"
+          }
+        ],
+        "related-findings": [
+          {
+            "finding-uuid": "85fa0fbd-8c33-5296-a0f6-93bc420c343b"
+          }
+        ],
+        "related-observations": [
+          {
+            "observation-uuid": "b44ea913-044d-50ae-84da-1e41eae33ff1"
+          }
+        ],
+        "related-risks": [
+          {
+            "risk-uuid": "ef482384-23f0-58e7-9a2c-0ccdb602936b"
+          }
+        ]
+      }
+    ]
+  }
+}

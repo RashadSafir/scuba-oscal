@@ -1,0 +1,638 @@
+{
+  "assessment-results": {
+    "uuid": "9ab4a0df-f000-5e42-9554-48f9a85c1ce4",
+    "metadata": {
+      "title": "SCuBA Microsoft Entra ID (MS.AAD) Assessment Results",
+      "last-modified": "2026-09-24T00:09:06+00:00",
+      "version": "0.1.0",
+      "oscal-version": "1.1.2",
+      "links": [
+        {
+          "href": "catalog.json",
+          "rel": "reference",
+          "text": "CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline"
+        },
+        {
+          "href": "scuba_results_sample.json",
+          "rel": "reference",
+          "text": "ScubaGear results report"
+        }
+      ]
+    },
+    "import-ap": {
+      "href": "assessment-plan.json"
+    },
+    "results": [
+      {
+        "uuid": "1274f231-b1cf-585a-8236-d5125207fa12",
+        "title": "ScubaGear MS.AAD scan results",
+        "description": "Results of a ScubaGear scan of tenant tqhjy (tqhjy.onmicrosoft.com), assessed against: CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline.",
+        "start": "2026-05-04T17:15:48+00:00",
+        "props": [
+          {
+            "name": "tenant-id",
+            "ns": "https://scuba.example/ns",
+            "value": "ca08493a-c9c8-4db0-a9e8-d3b4bafac269"
+          },
+          {
+            "name": "tenant-name",
+            "ns": "https://scuba.example/ns",
+            "value": "tqhjy"
+          },
+          {
+            "name": "tenant-domain",
+            "ns": "https://scuba.example/ns",
+            "value": "tqhjy.onmicrosoft.com"
+          },
+          {
+            "name": "scuba-tool-version",
+            "ns": "https://scuba.example/ns",
+            "value": "1.8.0"
+          },
+          {
+            "name": "scuba-report-uuid",
+            "ns": "https://scuba.example/ns",
+            "value": "fa5589b7-d528-4f80-8e7d-5c20eda7b6d8"
+          }
+        ],
+        "reviewed-controls": {
+          "control-selections": [
+            {
+              "include-controls": [
+                {
+                  "control-id": "ms.aad.1.1v1",
+                  "statement-ids": [
+                    "ms.aad.1.1v1_smt"
+                  ]
+                },
+                {
+                  "control-id": "ms.aad.2.1v1",
+                  "statement-ids": [
+                    "ms.aad.2.1v1_smt"
+                  ]
+                },
+                {
+                  "control-id": "ms.aad.2.3v1",
+                  "statement-ids": [
+                    "ms.aad.2.3v1_smt"
+                  ]
+                },
+                {
+                  "control-id": "ms.aad.3.8v1",
+                  "statement-ids": [
+                    "ms.aad.3.8v1_smt"
+                  ]
+                },
+                {
+                  "control-id": "ms.aad.5.2v1",
+                  "statement-ids": [
+                    "ms.aad.5.2v1_smt"
+                  ]
+                },
+                {
+                  "control-id": "ms.aad.7.1v1",
+                  "statement-ids": [
+                    "ms.aad.7.1v1_smt"
+                  ]
+                },
+                {
+                  "control-id": "ms.aad.7.4v1",
+                  "statement-ids": [
+                    "ms.aad.7.4v1_smt"
+                  ]
+                },
+                {
+                  "control-id": "ms.aad.8.1v1",
+                  "statement-ids": [
+                    "ms.aad.8.1v1_smt"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "observations": [
+          {
+            "uuid": "0f1aeea1-f411-5087-8040-557f2e00fcce",
+            "title": "MS.AAD.1.1v1 check: Block legacy authentication",
+            "description": "1 conditional access policy(s) found that meet(s) all requirements: MS.AAD.1.1v1 Legacy authentication SHALL be blocked.",
+            "props": [
+              {
+                "name": "scuba-policy-id",
+                "ns": "https://scuba.example/ns",
+                "value": "MS.AAD.1.1v1"
+              },
+              {
+                "name": "scuba-result",
+                "ns": "https://scuba.example/ns",
+                "value": "Pass"
+              },
+              {
+                "name": "scuba-criticality",
+                "ns": "https://scuba.example/ns",
+                "value": "Shall"
+              },
+              {
+                "name": "scuba-product",
+                "ns": "https://scuba.example/ns",
+                "value": "AAD"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "href": "scuba_results_sample.json",
+                "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 1 (Legacy Authentication): Result Pass."
+              }
+            ],
+            "collected": "2026-05-04T17:15:48+00:00"
+          },
+          {
+            "uuid": "3b4670db-ce9e-5c2d-883e-28d8a736e15c",
+            "title": "MS.AAD.2.1v1 check: Block high-risk users",
+            "description": "2 conditional access policy(s) found that meet(s) all requirements: MS.AAD.2.1v1 Users detected as high risk SHALL be blocked, MS.AAD.2.1v1 Users detected as high risk SHALL be blocked Duplicate.",
+            "props": [
+              {
+                "name": "scuba-policy-id",
+                "ns": "https://scuba.example/ns",
+                "value": "MS.AAD.2.1v1"
+              },
+              {
+                "name": "scuba-result",
+                "ns": "https://scuba.example/ns",
+                "value": "Pass"
+              },
+              {
+                "name": "scuba-criticality",
+                "ns": "https://scuba.example/ns",
+                "value": "Shall"
+              },
+              {
+                "name": "scuba-product",
+                "ns": "https://scuba.example/ns",
+                "value": "AAD"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "href": "scuba_results_sample.json",
+                "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 2 (Risk Based Policies): Result Pass."
+              }
+            ],
+            "collected": "2026-05-04T17:15:48+00:00"
+          },
+          {
+            "uuid": "7e67d646-f6f7-5ee2-8399-2d87de850c5e",
+            "title": "MS.AAD.2.3v1 check: Block high-risk sign-ins",
+            "description": "1 conditional access policy(s) found that meet(s) all requirements: MS.AAD.2.3v1 Sign-ins detected as high risk SHALL be blocked.",
+            "props": [
+              {
+                "name": "scuba-policy-id",
+                "ns": "https://scuba.example/ns",
+                "value": "MS.AAD.2.3v1"
+              },
+              {
+                "name": "scuba-result",
+                "ns": "https://scuba.example/ns",
+                "value": "Pass"
+              },
+              {
+                "name": "scuba-criticality",
+                "ns": "https://scuba.example/ns",
+                "value": "Shall"
+              },
+              {
+                "name": "scuba-product",
+                "ns": "https://scuba.example/ns",
+                "value": "AAD"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "href": "scuba_results_sample.json",
+                "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 2 (Risk Based Policies): Result Pass."
+              }
+            ],
+            "collected": "2026-05-04T17:15:48+00:00"
+          },
+          {
+            "uuid": "a29f89d9-e68b-55bb-a736-385bb953b563",
+            "title": "MS.AAD.3.8v1 check: Require managed devices to register MFA",
+            "description": "0 conditional access policy(s) found that meet(s) all requirements.",
+            "props": [
+              {
+                "name": "scuba-policy-id",
+                "ns": "https://scuba.example/ns",
+                "value": "MS.AAD.3.8v1"
+              },
+              {
+                "name": "scuba-result",
+                "ns": "https://scuba.example/ns",
+                "value": "Warning"
+              },
+              {
+                "name": "scuba-criticality",
+                "ns": "https://scuba.example/ns",
+                "value": "Should"
+              },
+              {
+                "name": "scuba-product",
+                "ns": "https://scuba.example/ns",
+                "value": "AAD"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "href": "scuba_results_sample.json",
+                "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 3 (Strong Authentication and a Secure Registration Process): Result Warning."
+              }
+            ],
+            "collected": "2026-05-04T17:15:48+00:00"
+          },
+          {
+            "uuid": "c73c579d-eb6b-500b-a4fa-2dc1a180eca3",
+            "title": "MS.AAD.5.2v1 check: Restrict user consent to applications",
+            "description": "1 authorization policies found that allow non-admin users to consent to third-party applications with risky delegated permission classifications: authorizationPolicy",
+            "props": [
+              {
+                "name": "scuba-policy-id",
+                "ns": "https://scuba.example/ns",
+                "value": "MS.AAD.5.2v1"
+              },
+              {
+                "name": "scuba-result",
+                "ns": "https://scuba.example/ns",
+                "value": "Fail"
+              },
+              {
+                "name": "scuba-criticality",
+                "ns": "https://scuba.example/ns",
+                "value": "Shall"
+              },
+              {
+                "name": "scuba-product",
+                "ns": "https://scuba.example/ns",
+                "value": "AAD"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "href": "scuba_results_sample.json",
+                "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 5 (Application Registration and Consent): Result Fail."
+              }
+            ],
+            "collected": "2026-05-04T17:15:48+00:00"
+          },
+          {
+            "uuid": "3bf678c3-0a21-573e-89e7-351fcbf5bdf7",
+            "title": "MS.AAD.7.1v1 check: Limit Global Administrators to 2-8 users",
+            "description": "2 global admin(s) found: Jane Doe, John Public",
+            "props": [
+              {
+                "name": "scuba-policy-id",
+                "ns": "https://scuba.example/ns",
+                "value": "MS.AAD.7.1v1"
+              },
+              {
+                "name": "scuba-result",
+                "ns": "https://scuba.example/ns",
+                "value": "Pass"
+              },
+              {
+                "name": "scuba-criticality",
+                "ns": "https://scuba.example/ns",
+                "value": "Shall"
+              },
+              {
+                "name": "scuba-product",
+                "ns": "https://scuba.example/ns",
+                "value": "AAD"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "href": "scuba_results_sample.json",
+                "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 7 (Highly Privileged User Access): Result Pass."
+              }
+            ],
+            "collected": "2026-05-04T17:15:48+00:00"
+          },
+          {
+            "uuid": "b44ea913-044d-50ae-84da-1e41eae33ff1",
+            "title": "MS.AAD.7.4v1 check: No permanent active privileged role assignments",
+            "description": "6 role(s) that contain users with permanent active assignment: Application Administrator, Cloud Application Administrator, Exchange Administrator, Global Administrator, SharePoint Administrator, User Administrator",
+            "props": [
+              {
+                "name": "scuba-policy-id",
+                "ns": "https://scuba.example/ns",
+                "value": "MS.AAD.7.4v1"
+              },
+              {
+                "name": "scuba-result",
+                "ns": "https://scuba.example/ns",
+                "value": "Fail"
+              },
+              {
+                "name": "scuba-criticality",
+                "ns": "https://scuba.example/ns",
+                "value": "Shall"
+              },
+              {
+                "name": "scuba-product",
+                "ns": "https://scuba.example/ns",
+                "value": "AAD"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "href": "scuba_results_sample.json",
+                "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 7 (Highly Privileged User Access): Result Fail."
+              }
+            ],
+            "collected": "2026-05-04T17:15:48+00:00"
+          },
+          {
+            "uuid": "32e88462-62a7-5199-bee3-ffe662fae840",
+            "title": "MS.AAD.8.1v1 check: Limit guest access to directory objects",
+            "description": "Permission level set to \"Limited access\" (authorizationPolicy)",
+            "props": [
+              {
+                "name": "scuba-policy-id",
+                "ns": "https://scuba.example/ns",
+                "value": "MS.AAD.8.1v1"
+              },
+              {
+                "name": "scuba-result",
+                "ns": "https://scuba.example/ns",
+                "value": "Pass"
+              },
+              {
+                "name": "scuba-criticality",
+                "ns": "https://scuba.example/ns",
+                "value": "Should"
+              },
+              {
+                "name": "scuba-product",
+                "ns": "https://scuba.example/ns",
+                "value": "AAD"
+              }
+            ],
+            "methods": [
+              "TEST"
+            ],
+            "types": [
+              "finding"
+            ],
+            "relevant-evidence": [
+              {
+                "href": "scuba_results_sample.json",
+                "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 8 (Guest User Access): Result Pass."
+              }
+            ],
+            "collected": "2026-05-04T17:15:48+00:00"
+          }
+        ],
+        "risks": [
+          {
+            "uuid": "23ac85ec-fb37-5956-af24-8fdaaf23a807",
+            "title": "Risk: Require managed devices to register MFA",
+            "description": "MS.AAD.3.8v1 was not met in this scan (Warning). 0 conditional access policy(s) found that meet(s) all requirements.",
+            "statement": "Reduce risk of an adversary using stolen user credentials and then registering their own MFA device to access the tenant by requiring a managed device provisioned and controlled by the agency to perform registration actions. This prevents the adversary from using their own unmanaged device to perform the registration.",
+            "status": "open",
+            "related-observations": [
+              {
+                "observation-uuid": "a29f89d9-e68b-55bb-a736-385bb953b563"
+              }
+            ]
+          },
+          {
+            "uuid": "b660cad9-4711-5425-827d-69438ba33942",
+            "title": "Risk: Restrict user consent to applications",
+            "description": "MS.AAD.5.2v1 was not met in this scan (Fail). 1 authorization policies found that allow non-admin users to consent to third-party applications with risky delegated permission classifications: authorizationPolicy",
+            "statement": "Restricting user consent for applications reduces risk of users giving insecure applications access to their data via [consent grant attacks](https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/detect-and-remediate-illicit-consent-grants?view=o365-worldwide).",
+            "status": "open",
+            "related-observations": [
+              {
+                "observation-uuid": "c73c579d-eb6b-500b-a4fa-2dc1a180eca3"
+              }
+            ]
+          },
+          {
+            "uuid": "ef482384-23f0-58e7-9a2c-0ccdb602936b",
+            "title": "Risk: No permanent active privileged role assignments",
+            "description": "MS.AAD.7.4v1 was not met in this scan (Fail). 6 role(s) that contain users with permanent active assignment: Application Administrator, Cloud Application Administrator, Exchange Administrator, Global Administrator, SharePoint Administrator, User Administrator",
+            "statement": "Instead of giving users permanent assignments to privileged roles, provisioning access just in time lessens exposure if those accounts become compromised. In Microsoft Entra ID PIM or an alternative PAM system, just in time access can be provisioned by assigning users to roles as eligible instead of perpetually active.",
+            "status": "open",
+            "related-observations": [
+              {
+                "observation-uuid": "b44ea913-044d-50ae-84da-1e41eae33ff1"
+              }
+            ]
+          }
+        ],
+        "findings": [
+          {
+            "uuid": "f7dcb24a-ec99-56d5-95b7-4b33cb8e91d0",
+            "title": "MS.AAD.1.1v1 satisfied",
+            "description": "1 conditional access policy(s) found that meet(s) all requirements: MS.AAD.1.1v1 Legacy authentication SHALL be blocked.",
+            "target": {
+              "type": "statement-id",
+              "target-id": "ms.aad.1.1v1_smt",
+              "status": {
+                "state": "satisfied",
+                "reason": "pass"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "0f1aeea1-f411-5087-8040-557f2e00fcce"
+              }
+            ]
+          },
+          {
+            "uuid": "9b59699f-91ef-52eb-b706-8a0769159a89",
+            "title": "MS.AAD.2.1v1 satisfied",
+            "description": "2 conditional access policy(s) found that meet(s) all requirements: MS.AAD.2.1v1 Users detected as high risk SHALL be blocked, MS.AAD.2.1v1 Users detected as high risk SHALL be blocked Duplicate.",
+            "target": {
+              "type": "statement-id",
+              "target-id": "ms.aad.2.1v1_smt",
+              "status": {
+                "state": "satisfied",
+                "reason": "pass"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "3b4670db-ce9e-5c2d-883e-28d8a736e15c"
+              }
+            ]
+          },
+          {
+            "uuid": "a8a59411-385e-57fc-961d-c70b78faa592",
+            "title": "MS.AAD.2.3v1 satisfied",
+            "description": "1 conditional access policy(s) found that meet(s) all requirements: MS.AAD.2.3v1 Sign-ins detected as high risk SHALL be blocked.",
+            "target": {
+              "type": "statement-id",
+              "target-id": "ms.aad.2.3v1_smt",
+              "status": {
+                "state": "satisfied",
+                "reason": "pass"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "7e67d646-f6f7-5ee2-8399-2d87de850c5e"
+              }
+            ]
+          },
+          {
+            "uuid": "9608cafc-d70b-5e6b-bd31-85be980bc4bd",
+            "title": "MS.AAD.3.8v1 not satisfied",
+            "description": "0 conditional access policy(s) found that meet(s) all requirements.",
+            "target": {
+              "type": "statement-id",
+              "target-id": "ms.aad.3.8v1_smt",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "a29f89d9-e68b-55bb-a736-385bb953b563"
+              }
+            ],
+            "related-risks": [
+              {
+                "risk-uuid": "23ac85ec-fb37-5956-af24-8fdaaf23a807"
+              }
+            ]
+          },
+          {
+            "uuid": "d18f7ffb-f0cb-5b93-8289-b2c5a2806bf8",
+            "title": "MS.AAD.5.2v1 not satisfied",
+            "description": "1 authorization policies found that allow non-admin users to consent to third-party applications with risky delegated permission classifications: authorizationPolicy",
+            "target": {
+              "type": "statement-id",
+              "target-id": "ms.aad.5.2v1_smt",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "c73c579d-eb6b-500b-a4fa-2dc1a180eca3"
+              }
+            ],
+            "related-risks": [
+              {
+                "risk-uuid": "b660cad9-4711-5425-827d-69438ba33942"
+              }
+            ]
+          },
+          {
+            "uuid": "0b5078f9-9d0d-5676-a6dd-d4fc3b43bd4c",
+            "title": "MS.AAD.7.1v1 satisfied",
+            "description": "2 global admin(s) found: Jane Doe, John Public",
+            "target": {
+              "type": "statement-id",
+              "target-id": "ms.aad.7.1v1_smt",
+              "status": {
+                "state": "satisfied",
+                "reason": "pass"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "3bf678c3-0a21-573e-89e7-351fcbf5bdf7"
+              }
+            ]
+          },
+          {
+            "uuid": "85fa0fbd-8c33-5296-a0f6-93bc420c343b",
+            "title": "MS.AAD.7.4v1 not satisfied",
+            "description": "6 role(s) that contain users with permanent active assignment: Application Administrator, Cloud Application Administrator, Exchange Administrator, Global Administrator, SharePoint Administrator, User Administrator",
+            "target": {
+              "type": "statement-id",
+              "target-id": "ms.aad.7.4v1_smt",
+              "status": {
+                "state": "not-satisfied",
+                "reason": "fail"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "b44ea913-044d-50ae-84da-1e41eae33ff1"
+              }
+            ],
+            "related-risks": [
+              {
+                "risk-uuid": "ef482384-23f0-58e7-9a2c-0ccdb602936b"
+              }
+            ]
+          },
+          {
+            "uuid": "1a94e482-3b58-5997-bdb1-3b1801e81aea",
+            "title": "MS.AAD.8.1v1 satisfied",
+            "description": "Permission level set to \"Limited access\" (authorizationPolicy)",
+            "target": {
+              "type": "statement-id",
+              "target-id": "ms.aad.8.1v1_smt",
+              "status": {
+                "state": "satisfied",
+                "reason": "pass"
+              }
+            },
+            "related-observations": [
+              {
+                "observation-uuid": "32e88462-62a7-5199-bee3-ffe662fae840"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
