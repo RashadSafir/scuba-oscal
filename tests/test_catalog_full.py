@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-FULL = ROOT / "oscal" / "catalog-full.json"
+FULL = ROOT / "oscal" / "Controls" / "EntraID-catalog-full.json"
 SCOPED = ROOT / "oscal" / "catalog.json"
 
 
@@ -60,7 +60,7 @@ def test_scoped_controls_are_identical_in_both_catalogs():
     build()
     full = controls(FULL)
     for cid, c in controls(SCOPED).items():
-        assert full[cid] == c, f"{cid} differs between catalog.json and catalog-full.json"
+        assert full[cid] == c, f"{cid} differs between catalog.json and Controls/EntraID-catalog-full.json"
 
 
 def test_output_is_identical_between_runs():

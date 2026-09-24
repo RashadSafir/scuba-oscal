@@ -6,7 +6,7 @@ separate file, so the team's scoped catalog is untouched.
 
 Inputs : vendor/ScubaGear/PowerShell/ScubaGear/baselines/aad.md
          vendor/NIST_SP-800-53_rev5_catalog.json
-Output : oscal/catalog-full.json
+Output : oscal/Controls/EntraID-catalog-full.json
 Run    : python pipeline/make_catalog_full.py
 """
 import uuid
@@ -18,7 +18,7 @@ from trestle.oscal.common import Link, Metadata, Part, Property
 from make_catalog import (AAD_MD, FIXED_TIME, NIST, NIST_CATALOG, NS, PROP_NS, ROOT,
                           load_nist_ids, nist_anchor, parse_aad)
 
-OUT = ROOT / "oscal" / "catalog-full.json"
+OUT = ROOT / "oscal" / "Controls" / "EntraID-catalog-full.json"
 
 # Short display titles for every policy. A policy CISA adds later that isn't listed
 # here still gets built; its rule sentence is used as the title until one is added.

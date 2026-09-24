@@ -1,7 +1,7 @@
 """Tests for the AI layer. Run with:  python -m pytest -v tests/test_ai.py
 
 No network and no .env needed: the LLM is replaced by a fake client that records what it was
-sent and replies with canned text. Expected values are read from the raw OSCAL files.
+sent and replies with canned text. Expected values are read from oscal/findings.json.
 """
 import json
 import sys
@@ -37,36 +37,48 @@ def assistant(reply="ok"):
 
 @pytest.fixture(scope="module")
 def raw():
-    cat = read(fm.CATALOG)["catalog"]
-    res = read(fm.RESULTS)["assessment-results"]["results"][0]
-    return {c["parts"][0]["id"]: c for g in cat["groups"] for c in g["controls"]}, res
+    return read(fm.FINDINGS)
 
 
 def test_one_finding_per_catalog_control(raw):
-    controls, _ = raw
-    assert len(fm.load_findings()) == len(controls)
+    assert [f.control_id for f in fm.load_findings()] == [a["control_id"] for a in raw["assessments"]]
 
 
-def test_status_matches_assessment_results(raw):
-    controls, res = raw
-    expected = {}
-    for f in res["findings"]:
-        label = next(p["value"] for p in controls[f["target"]["target-id"]]["props"] if p["name"] == "label")
-        expected[label] = {"satisfied": "PASS", "not-satisfied": "FAIL"}[f["target"]["status"]["state"]]
-    assert {f.control_id: f.status for f in fm.load_findings()} == expected
+def test_status_matches_findings_json(raw):
+    expected = {"PASS": "PASS", "FAIL": "FAIL", "WARNING": "FAIL", "NOT_ASSESSED": "NOT ASSESSED"}
+    assert {f.control_id: f.status for f in fm.load_findings()} == \
+        {a["control_id"]: expected[a["status"]] for a in raw["assessments"]}
 
 
-def test_missing_finding_is_not_assessed(tmp_path):
-    doc = read(fm.RESULTS)
-    dropped = doc["assessment-results"]["results"][0]["findings"].pop(0)
-    path = tmp_path / "ar.json"
+def test_warning_is_a_failure_that_keeps_scubagears_word(raw):
+    warned = {a["control_id"] for a in raw["assessments"] if a["status"] == "WARNING"}
+    got = [f for f in fm.load_findings() if f.control_id in warned]
+    assert got and all((f.status, f.scuba_result) == ("FAIL", "Warning") for f in got)
+
+
+def test_not_assessed_has_no_priority_or_finding(raw):
+    unassessed = [f for f in fm.load_findings() if f.status == "NOT ASSESSED"]
+    assert unassessed and all((f.priority, f.finding, f.scuba_result) == (None, "", "") for f in unassessed)
+
+
+def test_unknown_status_rejected(raw, tmp_path):
+    doc = json.loads(json.dumps(raw))
+    doc["assessments"][0]["status"] = "MAYBE"
+    path = tmp_path / "findings.json"
     path.write_text(json.dumps(doc))
-    got = {f.requirement: f for f in fm.load_findings(results_path=path)}
-    smt = dropped["target"]["target-id"]
-    cat = {c["parts"][0]["id"]: c["parts"][0]["prose"] for g in read(fm.CATALOG)["catalog"]["groups"]
-           for c in g["controls"]}
-    f = got[cat[smt]]
-    assert (f.status, f.priority, f.finding) == ("NOT ASSESSED", None, "")
+    with pytest.raises(ValueError):
+        fm.load_findings(path)
+
+
+def test_assistant_takes_a_findings_path(raw, tmp_path):
+    doc = json.loads(json.dumps(raw))
+    doc["assessments"] = doc["assessments"][:1]
+    doc["metadata"]["scan"]["tenant"] = "other-tenant"
+    path = tmp_path / "findings.json"
+    path.write_text(json.dumps(doc))
+    a = am.Assistant(path, client=FakeClient("ok"), model="fake")
+    assert [f.control_id for f in a.findings] == [doc["assessments"][0]["control_id"]]
+    assert a.info["tenant"] == "other-tenant" and a.summary["total"] == 1
 
 
 def test_priority_high_before_moderate():
@@ -91,19 +103,19 @@ def test_prompt_contains_every_control_and_no_tenant_id():
     sent = json.dumps(client.sent[0])
     for f in a.findings:
         assert f.control_id in sent
-    tenant_id = next(p["value"] for p in read(fm.RESULTS)["assessment-results"]["results"][0]["props"]
-                     if p["name"] == "tenant-id")
+    results = read(fm.ROOT / "oscal" / "assessment-results.json")["assessment-results"]["results"][0]
+    tenant_id = next(p["value"] for p in results["props"] if p["name"] == "tenant-id")
     assert tenant_id not in sent
 
 
 def test_citations_are_verified_records():
     fail = next(f for f in fm.load_findings() if f.status == "FAIL")
-    a, _ = assistant(f"Fix `{fail.control_id}` first. Also consider `MS.AAD.3.1v1`, and {fail.control_id.lower()}.")
+    a, _ = assistant(f"Fix `{fail.control_id}` first. Also consider `MS.AAD.99.1v1`, and {fail.control_id.lower()}.")
     r = a.answer("What first?")
     assert [c["id"] for c in r["citations"]] == [fail.control_id]
     assert r["verified"] == [fail.to_dict()]
     assert r["citations"][0]["status"] == "FAIL"
-    assert r["unverified_references"] == ["MS.AAD.3.1v1"]
+    assert r["unverified_references"] == ["MS.AAD.99.1v1"]
 
 
 def test_history_is_trimmed_and_filtered():

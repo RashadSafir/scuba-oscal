@@ -1,17 +1,16 @@
-"""The Finding model: one record per catalog control, joined from the OSCAL files.
+"""The Finding model: one record per catalog control, read from findings.json.
 
-Inputs : oscal/catalog.json              what each control requires (statement, guidance, remediation)
-         oscal/assessment-results.json   what the scan found (finding verdict + observation evidence)
+Input : oscal/findings.json   built by comparison/compare_oscal.py from the SCuBA catalogs in
+                              oscal/Controls and the ScubaGear oscal/assessment-results.json
 
-This is plain code, not AI. Everything in a Finding is copied from the two files; nothing is
+This is plain code, not AI. Everything in a Finding is copied from findings.json; nothing is
 inferred. The AI layer (assistant.py) receives these records as its only facts.
 
-Join: finding.target.target-id == the catalog statement part id (the "_smt" id contract).
-Status:
-  PASS           finding state satisfied
-  FAIL           finding state not-satisfied (ScubaGear Fail, or Warning for a SHOULD)
-  NOT ASSESSED   the control is in the catalog but the results have no finding for it
-                 (ScubaGear returned N/A, Error or Omitted, and the results builder skipped it)
+Status (findings.json status -> Finding status):
+  PASS           -> PASS
+  FAIL           -> FAIL           ScubaGear Fail
+  WARNING        -> FAIL           ScubaGear Warning (a failed SHOULD); scuba_result keeps "Warning"
+  NOT_ASSESSED   -> NOT ASSESSED   the control is in the catalog but ScubaGear has no result for it
 """
 import html
 import json
@@ -20,12 +19,11 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-CATALOG = ROOT / "oscal" / "catalog.json"
-RESULTS = ROOT / "oscal" / "assessment-results.json"
+FINDINGS = ROOT / "oscal" / "findings.json"
 
 # Same obligation -> priority mapping as pipeline/make_poam.py. Keep the two in step.
 PRIORITY = {"SHALL": "high", "SHALL NOT": "high", "SHOULD": "moderate"}
-STATES = {"satisfied": "PASS", "not-satisfied": "FAIL"}
+STATES = {"PASS": "PASS", "FAIL": "FAIL", "WARNING": "FAIL", "NOT_ASSESSED": "NOT ASSESSED"}
 PRIORITY_ORDER = {"high": 0, "moderate": 1}
 
 
@@ -60,52 +58,32 @@ def _read(path):
     return json.loads(Path(path).read_text(encoding="utf-8-sig"))
 
 
-def _prop(props, name, default=""):
-    return next((p["value"] for p in props or [] if p["name"] == name), default)
-
-
-def load_findings(catalog_path=CATALOG, results_path=RESULTS):
+def load_findings(findings_path=FINDINGS):
     """Every catalog control as a Finding, in catalog order."""
-    catalog = _read(catalog_path)["catalog"]
-    result = _read(results_path)["assessment-results"]["results"][0]
-    observations = {o["uuid"]: o for o in result.get("observations", [])}
-    by_target = {f["target"]["target-id"]: f for f in result.get("findings", [])}
-
     out = []
-    for group in catalog["groups"]:
-        for c in group["controls"]:
-            parts = {p["name"]: p for p in c["parts"]}
-            obligation = _prop(c["props"], "obligation")
-            f = by_target.get(parts["statement"]["id"])
-            if f is None:
-                status, details, evidence, scuba_result = "NOT ASSESSED", "", "", ""
-            else:
-                state = f["target"]["status"]["state"]
-                if state not in STATES:
-                    raise ValueError(f"{c['id']}: unexpected finding state {state!r}")
-                status, details = STATES[state], f.get("description", "")
-                obs = [observations[r["observation-uuid"]] for r in f.get("related-observations", [])]
-                evidence = " ".join(e["description"] for o in obs for e in o.get("relevant-evidence", []))
-                scuba_result = next((_prop(o.get("props"), "scuba-result") for o in obs), "")
-            out.append(Finding(
-                control_id=_prop(c["props"], "label", c["id"]), title=c["title"], group=group["title"],
-                obligation=obligation, status=status,
-                priority=PRIORITY.get(obligation) if status == "FAIL" else None,
-                requirement=parts["statement"]["prose"], rationale=parts["guidance"]["prose"],
-                finding=details, evidence=evidence, scuba_result=scuba_result,
-                remediation=strip_html(parts["remediation"]["prose"]),
-                nist=[link["text"] for link in c.get("links", []) if link.get("rel") == "related"]))
+    for a in _read(findings_path)["assessments"]:
+        if a["status"] not in STATES:
+            raise ValueError(f"{a['control_id']}: unexpected status {a['status']!r}")
+        status, obligation = STATES[a["status"]], a.get("obligation") or ""
+        out.append(Finding(
+            control_id=a["control_id"], title=a.get("title") or "", group=a.get("group") or "",
+            obligation=obligation, status=status,
+            priority=PRIORITY.get(obligation) if status == "FAIL" else None,
+            requirement=a.get("requirement") or "", rationale=a.get("guidance") or "",
+            finding=a.get("finding") or "", evidence=" ".join(a.get("evidence") or []),
+            scuba_result=a.get("scubagear_result") or "",
+            remediation=strip_html(a.get("remediation_guidance")),
+            nist=list(a.get("nist") or [])))
     return out
 
 
-def load_assessment_info(results_path=RESULTS):
+def load_assessment_info(findings_path=FINDINGS):
     """Scan-level facts safe to show the AI: tenant display name, scan time, tool version.
 
-    The tenant id and report uuid are left out on purpose; the AI does not need them."""
-    result = _read(results_path)["assessment-results"]["results"][0]
-    props = result.get("props")
-    return dict(tenant=_prop(props, "tenant-name"), domain=_prop(props, "tenant-domain"),
-                scan_time=result.get("start", ""), tool_version=_prop(props, "scuba-tool-version"))
+    findings.json carries no tenant id or report uuid; the AI does not need them."""
+    scan = _read(findings_path).get("metadata", {}).get("scan", {})
+    return dict(tenant=scan.get("tenant") or "", domain=scan.get("domain") or "",
+                scan_time=scan.get("scan_time") or "", tool_version=scan.get("tool_version") or "")
 
 
 def summarize(findings):

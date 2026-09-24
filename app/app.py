@@ -231,8 +231,8 @@ try:
     assistant = get_assistant()
 except Exception:
     log.exception("Could not load the OSCAL results")
-    st.error("Couldn't load the OSCAL results from `oscal/`. Regenerate the catalog and assessment "
-             "results, then reload this page.", icon=":material/error:")
+    st.error("Couldn't load `oscal/findings.json`. Regenerate it with `comparison/compare_oscal.py`, "
+             "then reload this page.", icon=":material/error:")
     st.stop()
 
 findings, info, summary = assistant.findings, assistant.info, assistant.summary

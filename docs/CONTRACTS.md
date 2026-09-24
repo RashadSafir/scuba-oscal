@@ -11,11 +11,13 @@
 
 ## Shared file paths
 - oscal/catalog.json
+- oscal/Controls/*.json (SCuBA catalogs, input to comparison/compare_oscal.py)
+- oscal/findings.json (compare_oscal.py output; the AI layer's only input)
 - oscal/assessment-results.json
 - oscal/poam.json
 
 ## AI interface (Role 3)
-Code: `ai/` (`from ai import answer, default_assistant`). Facts come from `ai/findings.py` (plain code, no AI).
+Code: `ai/` (`from ai import answer, default_assistant`). Facts come from `ai/findings.py` (plain code, no AI), which reads `oscal/findings.json`.
 
 ```
 answer(question: str, history: list[{"role", "content"}] | None = None) -> {
@@ -26,7 +28,7 @@ answer(question: str, history: list[{"role", "content"}] | None = None) -> {
 }
 default_assistant().explain(control_id)      # same shape, for "Ask AI about this finding"
 default_assistant().executive_summary()      # same shape
-ai.reload()                                  # after oscal/*.json is regenerated (new upload)
+ai.reload()                                  # after oscal/findings.json is regenerated (new upload)
 ```
 Finding fields: control_id, title, group, obligation, status (PASS | FAIL | NOT ASSESSED), priority,
 requirement, rationale, finding, evidence, scuba_result, remediation, nist
