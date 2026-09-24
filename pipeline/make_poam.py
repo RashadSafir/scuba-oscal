@@ -31,7 +31,8 @@ from trestle.oscal.common import AssociatedRisk, Link, Metadata, Property, Respo
 from trestle.oscal.poam import PlanOfActionAndMilestones, PoamItem, RelatedFinding
 from trestle.oscal.poam import RelatedObservation as PoamRelatedObservation
 
-from make_assessment_results import NS, OSCAL_VERSION, PROP_NS, default_catalog, first_existing, load_catalog, now_utc
+from make_assessment_results import (NS, OSCAL_VERSION, PROP_NS, default_catalog, first_existing, load_catalog,
+                                     now_utc, rel_href)
 
 HERE = Path(__file__).resolve().parent
 
@@ -44,7 +45,7 @@ def default_results():
     return first_existing(HERE / "assessment-results.json", HERE.parent / "oscal" / "assessment-results.json")
 
 
-def build(results_path, catalog_path):
+def build(results_path, catalog_path, out_dir="."):
     """Returns the POA&M, or None if the results contain no failures."""
     catalog_title, controls = load_catalog(catalog_path)
     by_target = {c["smt_id"]: (cid, c) for cid, c in controls.items()}
@@ -95,9 +96,9 @@ def build(results_path, catalog_path):
         metadata=Metadata(
             title="SCuBA Microsoft Entra ID (MS.AAD) Plan of Action and Milestones",
             last_modified=now_utc(), version="0.1.0", oscal_version=OSCAL_VERSION,
-            links=[Link(href=Path(results_path).name, rel="reference",
+            links=[Link(href=rel_href(results_path, out_dir), rel="reference",
                         text="Assessment results this POA&M was built from"),
-                   Link(href=Path(catalog_path).name, rel="reference", text=catalog_title)]),
+                   Link(href=rel_href(catalog_path, out_dir), rel="reference", text=catalog_title)]),
         observations=used_obs, risks=used_risks, findings=findings, poam_items=items)
 
 
@@ -111,7 +112,7 @@ def main():
         if not f.exists():
             raise SystemExit(f"Missing input: {f}")
     out = args.out or args.assessment_results.parent / "poam.json"
-    poam = build(args.assessment_results, args.catalog)
+    poam = build(args.assessment_results, args.catalog, out_dir=out.parent)
     if poam is None:
         print("No failed checks in the results, so there is nothing to plan. No POA&M written.",
               file=sys.stderr)
