@@ -12,7 +12,9 @@ from pathlib import Path
 import pytest
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+# the scripts live in ../pipeline in the repo; fall back to this folder when everything sits together
+PIPELINE = HERE.parent / "pipeline" if (HERE.parent / "pipeline" / "make_assessment_results.py").exists() else HERE
+sys.path.insert(0, str(PIPELINE))
 import make_assessment_results as mar  # noqa: E402  (only used for the default file locations)
 
 RESULTS = mar.default_results()
@@ -26,8 +28,8 @@ def read(path):
 
 
 def run(script, *args):
-    return subprocess.run([sys.executable, str(HERE / script), *map(str, args)],
-                          capture_output=True, text=True, cwd=HERE)
+    return subprocess.run([sys.executable, str(PIPELINE / script), *map(str, args)],
+                          capture_output=True, text=True, cwd=PIPELINE)
 
 
 def make_results(folder, scan=None):
@@ -156,7 +158,7 @@ def test_uuids_are_unique_per_kind(built):
 
 
 def test_same_results_reproduce_the_same_poam(built, tmp_path):
-    proc, out = make_poam(built["results"], tmp_path / "again.json")
+    proc, out = make_poam(built["results"], built["out"].parent / "again.json")   # same folder, so the relative links match
     assert proc.returncode == 0, proc.stderr
     docs = []
     for path in (built["out"], out):
@@ -205,3 +207,8 @@ def test_a_finding_pointing_at_nothing_is_refused(built, tmp_path):
     proc, out = make_poam(bad)
     assert proc.returncode != 0 and "not in the catalog" in proc.stderr
     assert not out.exists()
+
+
+def test_poam_file_links_resolve(built):
+    for link in built["poam"]["metadata"]["links"]:
+        assert (built["out"].parent / link["href"]).exists(), f"dangling link: {link['href']}"

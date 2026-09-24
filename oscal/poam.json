@@ -3,7 +3,7 @@
     "uuid": "098f2bd9-b23b-56d3-9a00-648b23fd5c72",
     "metadata": {
       "title": "SCuBA Microsoft Entra ID (MS.AAD) Plan of Action and Milestones",
-      "last-modified": "2026-09-24T00:09:06+00:00",
+      "last-modified": "2026-09-24T21:13:43+00:00",
       "version": "0.1.0",
       "oscal-version": "1.1.2",
       "links": [
@@ -54,7 +54,7 @@
         ],
         "relevant-evidence": [
           {
-            "href": "scuba_results_sample.json",
+            "href": "../data/sample/scuba_results_sample.json",
             "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 3 (Strong Authentication and a Secure Registration Process): Result Warning."
           }
         ],
@@ -94,7 +94,7 @@
         ],
         "relevant-evidence": [
           {
-            "href": "scuba_results_sample.json",
+            "href": "../data/sample/scuba_results_sample.json",
             "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 5 (Application Registration and Consent): Result Fail."
           }
         ],
@@ -134,7 +134,7 @@
         ],
         "relevant-evidence": [
           {
-            "href": "scuba_results_sample.json",
+            "href": "../data/sample/scuba_results_sample.json",
             "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 7 (Highly Privileged User Access): Result Fail."
           }
         ],

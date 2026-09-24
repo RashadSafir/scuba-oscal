@@ -3,7 +3,7 @@
     "uuid": "9ab4a0df-f000-5e42-9554-48f9a85c1ce4",
     "metadata": {
       "title": "SCuBA Microsoft Entra ID (MS.AAD) Assessment Results",
-      "last-modified": "2026-09-24T00:09:06+00:00",
+      "last-modified": "2026-09-24T21:13:42+00:00",
       "version": "0.1.0",
       "oscal-version": "1.1.2",
       "links": [
@@ -13,7 +13,7 @@
           "text": "CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline"
         },
         {
-          "href": "scuba_results_sample.json",
+          "href": "../data/sample/scuba_results_sample.json",
           "rel": "reference",
           "text": "ScubaGear results report"
         }
@@ -146,7 +146,7 @@
             ],
             "relevant-evidence": [
               {
-                "href": "scuba_results_sample.json",
+                "href": "../data/sample/scuba_results_sample.json",
                 "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 1 (Legacy Authentication): Result Pass."
               }
             ],
@@ -186,7 +186,7 @@
             ],
             "relevant-evidence": [
               {
-                "href": "scuba_results_sample.json",
+                "href": "../data/sample/scuba_results_sample.json",
                 "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 2 (Risk Based Policies): Result Pass."
               }
             ],
@@ -226,7 +226,7 @@
             ],
             "relevant-evidence": [
               {
-                "href": "scuba_results_sample.json",
+                "href": "../data/sample/scuba_results_sample.json",
                 "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 2 (Risk Based Policies): Result Pass."
               }
             ],
@@ -266,7 +266,7 @@
             ],
             "relevant-evidence": [
               {
-                "href": "scuba_results_sample.json",
+                "href": "../data/sample/scuba_results_sample.json",
                 "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 3 (Strong Authentication and a Secure Registration Process): Result Warning."
               }
             ],
@@ -306,7 +306,7 @@
             ],
             "relevant-evidence": [
               {
-                "href": "scuba_results_sample.json",
+                "href": "../data/sample/scuba_results_sample.json",
                 "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 5 (Application Registration and Consent): Result Fail."
               }
             ],
@@ -346,7 +346,7 @@
             ],
             "relevant-evidence": [
               {
-                "href": "scuba_results_sample.json",
+                "href": "../data/sample/scuba_results_sample.json",
                 "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 7 (Highly Privileged User Access): Result Pass."
               }
             ],
@@ -386,7 +386,7 @@
             ],
             "relevant-evidence": [
               {
-                "href": "scuba_results_sample.json",
+                "href": "../data/sample/scuba_results_sample.json",
                 "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 7 (Highly Privileged User Access): Result Fail."
               }
             ],
@@ -426,7 +426,7 @@
             ],
             "relevant-evidence": [
               {
-                "href": "scuba_results_sample.json",
+                "href": "../data/sample/scuba_results_sample.json",
                 "description": "ScubaGear report fa5589b7-d528-4f80-8e7d-5c20eda7b6d8, AAD group 8 (Guest User Access): Result Pass."
               }
             ],

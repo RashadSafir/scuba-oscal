@@ -13,7 +13,9 @@ from pathlib import Path
 import pytest
 
 HERE = Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE))
+# the scripts live in ../pipeline in the repo; fall back to this folder when everything sits together
+PIPELINE = HERE.parent / "pipeline" if (HERE.parent / "pipeline" / "make_assessment_results.py").exists() else HERE
+sys.path.insert(0, str(PIPELINE))
 import make_assessment_results as mar  # noqa: E402  (only used for the default file locations)
 
 RESULTS = mar.default_results()
@@ -29,11 +31,11 @@ FIXED_TIME = "2026-01-15T10:30:00+00:00"
 
 def build(out, scan_time=FIXED_TIME, results=None, extra=()):
     """Writes assessment-results (at `out`) and assessment-plan.json (next to it)."""
-    cmd = [sys.executable, str(HERE / "make_assessment_results.py"),
+    cmd = [sys.executable, str(PIPELINE / "make_assessment_results.py"),
            "--results", str(results or RESULTS), "--catalog", str(CATALOG), "--out", str(out), *extra]
     if scan_time:
         cmd += ["--scan-time", scan_time]
-    subprocess.run(cmd, check=True, capture_output=True, cwd=HERE)
+    subprocess.run(cmd, check=True, capture_output=True, cwd=PIPELINE)
 
 
 def plan_of(out):
@@ -245,8 +247,8 @@ def test_warning_is_a_failure_and_unevaluated_results_are_skipped(tmp_path):
 def test_an_unknown_result_value_is_refused(tmp_path):
     scan = with_results(tmp_path, {"MS.AAD.1.1v1": "Maybe"})
     out = tmp_path / "ar.json"
-    r = subprocess.run([sys.executable, str(HERE / "make_assessment_results.py"), "--results", str(scan),
-                        "--catalog", str(CATALOG), "--out", str(out)], capture_output=True, text=True, cwd=HERE)
+    r = subprocess.run([sys.executable, str(PIPELINE / "make_assessment_results.py"), "--results", str(scan),
+                        "--catalog", str(CATALOG), "--out", str(out)], capture_output=True, text=True, cwd=PIPELINE)
     assert r.returncode != 0 and "unknown ScubaGear Result" in r.stderr
     assert not out.exists()
 
@@ -254,9 +256,9 @@ def test_an_unknown_result_value_is_refused(tmp_path):
 def test_a_file_in_the_wrong_format_is_refused(tmp_path):
     wrong = tmp_path / "TestResults.json"
     wrong.write_text(json.dumps([{"PolicyId": "MS.AAD.1.1v1", "RequirementMet": True}]), encoding="utf-8")
-    r = subprocess.run([sys.executable, str(HERE / "make_assessment_results.py"), "--results", str(wrong),
+    r = subprocess.run([sys.executable, str(PIPELINE / "make_assessment_results.py"), "--results", str(wrong),
                         "--catalog", str(CATALOG), "--out", str(tmp_path / "ar.json")],
-                       capture_output=True, text=True, cwd=HERE)
+                       capture_output=True, text=True, cwd=PIPELINE)
     assert r.returncode != 0 and "not a ScubaGear results report" in r.stderr
 
 
@@ -282,3 +284,15 @@ def test_a_different_scan_never_shares_ids(tmp_path):
     build(c, results=other)
     ids = [set(all_uuids(p)) for p in (a, b, c)]
     assert not (ids[0] & ids[1]) and not (ids[0] & ids[2]), "different scans reused uuids"
+
+
+def test_every_file_link_resolves_from_where_the_file_is_written(out_file):
+    # links are relative paths, so they must work from the folder each file sits in
+    # (in the repo: oscal/ -> ../data/sample/scuba_results_sample.json)
+    doc = read(out_file)["assessment-results"]
+    hrefs = [l["href"] for l in doc["metadata"]["links"]]
+    hrefs += [e["href"] for o in doc["results"][0]["observations"] for e in o["relevant-evidence"]]
+    plan = read(out_file.parent / "assessment-plan.json")["assessment-plan"]
+    hrefs += [l["href"] for l in plan["metadata"]["links"]]
+    for href in hrefs:
+        assert (out_file.parent / href).exists(), f"link points at a file that does not exist: {href}"

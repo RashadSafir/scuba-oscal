@@ -94,6 +94,12 @@ def reviewed_controls(items):
         SelectControlById(control_id=cid, statement_ids=[smt]) for cid, smt in items])])
 
 
+def rel_href(target, from_dir):
+    """Link to `target` as a relative path from the folder the linking file is written to,
+    so the link still works when the files live in different folders (oscal/ vs data/sample/)."""
+    return Path(os.path.relpath(Path(target).resolve(), Path(from_dir).resolve())).as_posix()
+
+
 def now_utc():
     return datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -158,7 +164,7 @@ def scan_time_of(meta):
     return datetime.fromisoformat(stamp.replace("Z", "+00:00")).replace(microsecond=0)
 
 
-def build_plan(catalog_path, ssp_href):
+def build_plan(catalog_path, ssp_href, out_dir="."):
     """The assessment plan: what gets assessed (the catalog's controls), how (TEST) and with what (ScubaGear).
 
     It is built from the catalog alone, so it does not change from scan to scan; its uuids come
@@ -172,7 +178,7 @@ def build_plan(catalog_path, ssp_href):
         uuid=pid("assessment-plan"),
         metadata=Metadata(title="SCuBA Microsoft Entra ID (MS.AAD) Assessment Plan",
                           last_modified=now_utc(), version="0.1.0", oscal_version=OSCAL_VERSION,
-                          links=[Link(href=Path(catalog_path).name, rel="reference", text=catalog_title)]),
+                          links=[Link(href=rel_href(catalog_path, out_dir), rel="reference", text=catalog_title)]),
         # OSCAL requires a link to the System Security Plan (the system owner's description of the
         # system being assessed). We do not have one, so this points at where it would live.
         import_ssp=ImportSsp(href=ssp_href,
@@ -193,11 +199,11 @@ def build_plan(catalog_path, ssp_href):
                         f"'{catalog_title}' against its result (method: TEST).")])
 
 
-def build(results_path, catalog_path, scan_time, plan_href):
+def build(results_path, catalog_path, scan_time, plan_href, out_dir="."):
     catalog_title, controls = load_catalog(catalog_path)
     meta, scan = load_scan(results_path)
     uid = make_uid(results_path, scan_time)
-    report = Path(results_path).name
+    report = rel_href(results_path, out_dir)   # e.g. ../data/sample/scuba_results_sample.json
 
     missing = [c for c in controls if c not in scan]
     if missing:
@@ -266,7 +272,7 @@ def build(results_path, catalog_path, scan_time, plan_href):
         uuid=uid("assessment-results", "ms.aad"),
         metadata=Metadata(title="SCuBA Microsoft Entra ID (MS.AAD) Assessment Results",
                           last_modified=now_utc(), version="0.1.0", oscal_version=OSCAL_VERSION,
-                          links=[Link(href=Path(catalog_path).name, rel="reference", text=catalog_title),
+                          links=[Link(href=rel_href(catalog_path, out_dir), rel="reference", text=catalog_title),
                                  Link(href=report, rel="reference", text="ScubaGear results report")]),
         import_ap=ImportAp(href=plan_href),   # the plan generated alongside these results
         results=[result]), (len(observations), len(findings), len(risks))
@@ -294,8 +300,9 @@ def main():
         scan_time = scan_time.replace(tzinfo=timezone.utc)   # a time with no zone is taken as UTC
     plan_out = args.plan_out or args.out.parent / "assessment-plan.json"
     plan_href = Path(os.path.relpath(plan_out, args.out.parent)).as_posix()   # how the results find the plan
-    plan = build_plan(args.catalog, args.ssp_href)
-    doc, (n_obs, n_find, n_risk) = build(args.results, args.catalog, scan_time, plan_href)
+    plan = build_plan(args.catalog, args.ssp_href, out_dir=plan_out.parent)
+    doc, (n_obs, n_find, n_risk) = build(args.results, args.catalog, scan_time, plan_href,
+                                         out_dir=args.out.parent)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     plan_out.parent.mkdir(parents=True, exist_ok=True)
     plan.oscal_write(plan_out)
