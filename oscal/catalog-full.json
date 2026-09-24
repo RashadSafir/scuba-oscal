@@ -1,0 +1,1547 @@
+{
+  "catalog": {
+    "uuid": "451da64f-7098-5076-a7e0-57b3426950d3",
+    "metadata": {
+      "title": "CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline - all policies",
+      "last-modified": "2026-09-23T00:00:00+00:00",
+      "version": "0.3.0",
+      "oscal-version": "1.1.2"
+    },
+    "groups": [
+      {
+        "id": "ms.aad.1",
+        "title": "Legacy Authentication",
+        "controls": [
+          {
+            "id": "ms.aad.1.1v1",
+            "title": "Block legacy authentication",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.1.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-7",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-7"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.1.1v1_smt",
+                "name": "statement",
+                "prose": "Legacy authentication SHALL be blocked."
+              },
+              {
+                "id": "ms.aad.1.1v1_gdn",
+                "name": "guidance",
+                "prose": "The security risk of allowing legacy authentication protocols is they do not support MFA. Blocking legacy protocols reduces the impact of user credential theft."
+              },
+              {
+                "id": "ms.aad.1.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. [Determine if an agency’s existing applications use legacy authentication](https://learn.microsoft.com/en-us/entra/identity/conditional-access/block-legacy-authentication#identify-legacy-authentication-use) before blocking legacy authentication across the entire application base.\n\n2. Create a Conditional Access policy to block legacy authentication\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Conditions > Client apps > Configure > <b>Yes</b> > Legacy authentication clients > Select only <b>Exchange ActiveSync clients</b> and <b>Other clients</b>\n\n  Access controls > Grant > <b>Block Access</b>\n</pre>"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.aad.2",
+        "title": "Risk Based Policies",
+        "controls": [
+          {
+            "id": "ms.aad.2.1v1",
+            "title": "Block high-risk users",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.2.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-2.12",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-2(12)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-2.13",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-2(13)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.2.1v1_smt",
+                "name": "statement",
+                "prose": "Users detected as high risk SHALL be blocked."
+              },
+              {
+                "id": "ms.aad.2.1v1_gdn",
+                "name": "guidance",
+                "prose": "Blocking high-risk users may prevent compromised accounts from accessing the tenant."
+              },
+              {
+                "id": "ms.aad.2.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Create a conditional access policy blocking users categorized as high risk by the Identity Protection service. Configure the following policy settings in the new conditional access policy as per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Conditions > User risk > <b>High</b>\n\n  Access controls > Grant > <b>Block Access</b>\n</pre>"
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.2.2v1",
+            "title": "Notify admins of high-risk users",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.2.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-2.12",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-2(12)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.2.2v1_smt",
+                "name": "statement",
+                "prose": "A notification SHOULD be sent to the administrator when high-risk users are detected."
+              },
+              {
+                "id": "ms.aad.2.2v1_gdn",
+                "name": "guidance",
+                "prose": "Notification enables the admin to monitor the event and remediate the risk. This helps the organization proactively respond to cyber intrusions as they occur."
+              },
+              {
+                "id": "ms.aad.2.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  [Configure Microsoft Entra ID Protection to send a regularly monitored security mailbox email notification](https://learn.microsoft.com/en-us/entra/id-protection/howto-identity-protection-configure-notifications#configure-users-at-risk-detected-alerts) when user accounts are determined to be high risk."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.2.3v1",
+            "title": "Block high-risk sign-ins",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.2.3v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-2.12",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-2(12)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-2.13",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-2(13)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.2.3v1_smt",
+                "name": "statement",
+                "prose": "Sign-ins detected as high risk SHALL be blocked."
+              },
+              {
+                "id": "ms.aad.2.3v1_gdn",
+                "name": "guidance",
+                "prose": "This prevents compromised accounts from accessing the tenant."
+              },
+              {
+                "id": "ms.aad.2.3v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Create a Conditional Access policy blocking sign-ins determined high risk by the Identity Protection service. Configure the following policy settings in the new Conditional Access policy as per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Conditions > Sign-in risk > <b>High</b>\n\n  Access controls > Grant > <b>Block Access</b>\n</pre>"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.aad.3",
+        "title": "Strong Authentication and a Secure Registration Process",
+        "controls": [
+          {
+            "id": "ms.aad.3.1v1",
+            "title": "Phishing-resistant MFA for all users",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.3.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-2.1",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-2(1)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-2.2",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-2(2)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-5c"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-5g"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-2.8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-2(8)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.3.1v1_smt",
+                "name": "statement",
+                "prose": "Phishing-resistant MFA SHALL be enforced for all users."
+              },
+              {
+                "id": "ms.aad.3.1v1_gdn",
+                "name": "guidance",
+                "prose": "Weaker forms of MFA do not protect against sophisticated phishing attacks. By enforcing methods resistant to phishing, those risks are minimized."
+              },
+              {
+                "id": "ms.aad.3.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Create a conditional access policy enforcing phishing-resistant MFA for all users. Configure the following policy settings in the new conditional access policy, per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Access controls > Grant > Grant Access > Require authentication strength > <b>Phishing-resistant MFA</b>\n</pre>"
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.3.2v2",
+            "title": "MFA for all users",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.3.2v2"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-2.1",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-2(1)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-2.2",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-2(2)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.3.2v2_smt",
+                "name": "statement",
+                "prose": "MFA SHALL be enforced for all users."
+              },
+              {
+                "id": "ms.aad.3.2v2_gdn",
+                "name": "guidance",
+                "prose": "This policy helps protect the tenant for guest users or any other group with multifactor authentication where phishing-resistant MFA is not enforceable due to technical limitations. It protects against the weaknesses inherent in singlefactor authentication."
+              },
+              {
+                "id": "ms.aad.3.2v2_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "There are a few different options to implement a conditional access policy that enforces MFA. Each option is described below, followed by our recommendation and the respective instructions for each option.\n\n- **Option 1** - Create a custom authentication strength that includes the specific multifactor authentication methods supported by your organization and then create a policy that enforces your custom authentication strength.\n- **Option 2** - Create a policy that enforces multifactor authentication (no specific MFA method).\n- **Option 3** - Create a policy that enforces the built-in authentication strength named \"Multifactor authentication\" (no specific MFA method).\n\nWe recommend using a custom authentication strength because you can enforce the specific methods that offer the highest security. We recommend that you require the passwordless authentication strength Microsoft Authenticator (Phone Sign-in) in lieu of alternative MFA methods, since it removes passwords from the sign-in flow, reducing the exposure to credential compromise.\n\n**Option 1**. [Follow the instructions at this link](https://learn.microsoft.com/en-us/entra/identity/authentication/concept-authentication-strength-advanced-options#create-a-custom-authentication-strength) to create a custom authentication strength. Create a conditional access policy that enforces your custom authentication. Configure the following policy settings in the new conditional access policy, per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Access controls > Grant > Grant Access > <b>Require authentication strength</b> > <b>YOUR_CUSTOM_AUTHENTICATION_STRENGTH</b>\n</pre>\n\n**Option 2**. Create a conditional access policy that enforces MFA but does not dictate a specific MFA method. Configure the following policy settings in the new conditional access policy, per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Access controls > Grant > Grant Access > <b>Require multifactor authentication</b>\n</pre>\n\n**Option 3**. Create a conditional access policy that enforces the built-in authentication strength named \"Multifactor authentication\" and does not dictate a specific MFA method. Configure the following policy settings in the new conditional access policy, per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Access controls > Grant > Grant Access > <b>Require authentication strength</b> > <b>Multifactor authentication</b>\n</pre>"
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.3.3v2",
+            "title": "Show login context in Microsoft Authenticator",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.3.3v2"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-2.1",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-2(1)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-2.2",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-2(2)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-5c"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-5g"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-2.8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-2(8)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-2.13",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-2(13)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.3.3v2_smt",
+                "name": "statement",
+                "prose": "If Microsoft Authenticator is enabled, it SHALL be configured to show login context information."
+              },
+              {
+                "id": "ms.aad.3.3v2_gdn",
+                "name": "guidance",
+                "prose": "This policy helps protect the tenant when Microsoft Authenticator is used by showing user context information, which helps reduce MFA phishing compromises."
+              },
+              {
+                "id": "ms.aad.3.3v2_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "If Microsoft Authenticator is in use, configure Authenticator to display context information to users when they log in.\n\n1. In **Microsoft Entra admin center**, click **Authentication methods > Microsoft Authenticator**.\n2. Click the **Configure** tab.\n3. For **Allow use of Microsoft Authenticator OTP** select *No*.\n4. Under **Show application name in push and passwordless notifications** select **Status > Enabled** and **Target > Include > All users**.\n5. Under **Show geographic location in push and passwordless notifications** select **Status > Enabled** and **Target > Include > All users**.\n6. Select **Save**"
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.3.4v1",
+            "title": "Complete authentication methods migration",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.3.4v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-7",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-7"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.3.4v1_smt",
+                "name": "statement",
+                "prose": "The Authentication Methods Manage Migration feature SHALL be set to Migration Complete."
+              },
+              {
+                "id": "ms.aad.3.4v1_gdn",
+                "name": "guidance",
+                "prose": "To disable the legacy authentication methods screen for the tenant, configure the Manage Migration feature to Migration Complete. The MFA and Self-Service Password Reset (SSPR) authentication methods are both managed from a central admin page, thereby reducing administrative complexity and potential security misconfigurations."
+              },
+              {
+                "id": "ms.aad.3.4v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Go through the process of [How to migrate MFA and SSPR policy settings to the Authentication methods policy for Microsoft Entra ID](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-authentication-methods-manage).\n2. Once ready to finish the migration, [set the **Manage Migration** option to **Migration Complete**](https://learn.microsoft.com/en-us/entra/identity/authentication/how-to-authentication-methods-manage#finish-the-migration)."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.3.5v2",
+            "title": "Disable SMS, voice call, and email OTP",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.3.5v2"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-7",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-7b"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-5c"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.3.5v2_smt",
+                "name": "statement",
+                "prose": "The authentication methods SMS, Voice Call, and Email One-Time Passcode (OTP) SHALL be disabled."
+              },
+              {
+                "id": "ms.aad.3.5v2_gdn",
+                "name": "guidance",
+                "prose": "SMS, voice call, and email OTP are the weakest authenticators. This policy forces users to use stronger MFA methods."
+              },
+              {
+                "id": "ms.aad.3.5v2_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. In **Microsoft Entra admin center**, click **Authentication methods**\n2. Click on the **SMS**, **Voice Call**, and **Email OTP** authentication methods and disable each of them. Their statuses should be **Enabled > No** on the **Authentication methods > Policies** page."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.3.6v1",
+            "title": "Phishing-resistant MFA for privileged roles",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.3.6v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-2.1",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-2(1)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-5c"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-5g"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-2.8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-2(8)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.3.6v1_smt",
+                "name": "statement",
+                "prose": "Phishing-resistant MFA SHALL be required for highly privileged roles."
+              },
+              {
+                "id": "ms.aad.3.6v1_gdn",
+                "name": "guidance",
+                "prose": "This is a backup security policy to help protect privileged access to the tenant if the conditional access policy, which requires MFA for all users, is disabled or misconfigured."
+              },
+              {
+                "id": "ms.aad.3.6v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Create a conditional access policy enforcing phishing-resistant MFA for highly privileged roles.  Configure the following policy settings in the new conditional access policy, per the values below:\n\n<pre>\n  Users > Include > Select users and groups > Directory roles > <b>select each of the roles listed in the Highly Privileged Roles section at the top of this document</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Access controls > Grant > Grant Access > Require authentication strength > <b>Phishing-resistant MFA</b>\n</pre>"
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.3.7v1",
+            "title": "Require managed devices for authentication",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.3.7v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-20",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-20b"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-3"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.3.7v1_smt",
+                "name": "statement",
+                "prose": "Managed devices SHOULD be required for authentication."
+              },
+              {
+                "id": "ms.aad.3.7v1_gdn",
+                "name": "guidance",
+                "prose": "The security risk of an adversary authenticating to the tenant from their own device is reduced by requiring a managed device to authenticate. Managed devices are under the provisioning and control of the agency. [OMB-22-09](https://www.whitehouse.gov/wp-content/uploads/2022/01/M-22-09.pdf) states, \"When authorizing users to access resources, agencies must consider at least one device-level signal alongside identity information about the authenticated user.\""
+              },
+              {
+                "id": "ms.aad.3.7v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Create a conditional access policy requiring a user's device to be either Microsoft Entra ID hybrid joined or compliant during authentication. Configure the following policy settings in the new conditional access policy, per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Access controls > Grant > Grant Access > <b>Require device to be marked as compliant</b> and <b>Require Microsoft Entra ID hybrid joined device</b> > For multiple controls > <b>Require one of the selected controls</b>\n</pre>"
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.3.8v1",
+            "title": "Require managed devices to register MFA",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.3.8v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-20",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-20b"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-3"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.3.8v1_smt",
+                "name": "statement",
+                "prose": "Managed Devices SHOULD be required to register MFA."
+              },
+              {
+                "id": "ms.aad.3.8v1_gdn",
+                "name": "guidance",
+                "prose": "Reduce risk of an adversary using stolen user credentials and then registering their own MFA device to access the tenant by requiring a managed device provisioned and controlled by the agency to perform registration actions. This prevents the adversary from using their own unmanaged device to perform the registration."
+              },
+              {
+                "id": "ms.aad.3.8v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Create a conditional access policy requiring a user to be on a managed device when registering for MFA. Configure the following policy settings in the new conditional access policy, per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > User actions > <b>Register security information</b>\n\n  Access controls > Grant > Grant Access > <b>Require device to be marked as compliant</b> and <b>Require Microsoft Entra ID hybrid joined device</b> > For multiple controls > <b>Require one of the selected controls</b>\n</pre>"
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.3.9v1",
+            "title": "Block device code authentication",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.3.9v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-7",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-7"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.3.9v1_smt",
+                "name": "statement",
+                "prose": "Device code authentication SHOULD be blocked."
+              },
+              {
+                "id": "ms.aad.3.9v1_gdn",
+                "name": "guidance",
+                "prose": "The device code authentication flow has been abused to compromise user accounts via phishing. Since most organizations using M365 don't need device code authentication, blocking it mitigates the risk."
+              },
+              {
+                "id": "ms.aad.3.9v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Create a Conditional Access policy to block device code flow\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Conditions > Authentication Flows > Configure > <b>Yes</b> > Select <b>Device code flow</b>\n\n  Access controls > Grant > <b>Block Access</b>\n</pre>"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.aad.4",
+        "title": "Centralized Log Collection",
+        "controls": [
+          {
+            "id": "ms.aad.4.1v1",
+            "title": "Send security logs to the SOC",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.4.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#au-4",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AU-4"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.4.1v1_smt",
+                "name": "statement",
+                "prose": "Security logs SHALL be sent to the agency's security operations center for monitoring."
+              },
+              {
+                "id": "ms.aad.4.1v1_gdn",
+                "name": "guidance",
+                "prose": "The security risk of not having visibility into cyber attacks is reduced by collecting logs in the agency’s centralized security detection infrastructure. This makes security events available for auditing, query, and incident response."
+              },
+              {
+                "id": "ms.aad.4.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "Follow the configuration instructions unique to the products and integration patterns at your organization to send the security logs to the security operations center for monitoring."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.aad.5",
+        "title": "Application Registration and Consent",
+        "controls": [
+          {
+            "id": "ms.aad.5.1v1",
+            "title": "Only admins register applications",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.5.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(10)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-5"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.5.1v1_smt",
+                "name": "statement",
+                "prose": "Only administrators SHALL be allowed to register applications."
+              },
+              {
+                "id": "ms.aad.5.1v1_gdn",
+                "name": "guidance",
+                "prose": "Application access for the tenant presents a heightened security risk compared to interactive user access because applications are typically not subject to critical security protections, such as MFA policies. Reduce risk of unauthorized users installing malicious applications into the tenant by ensuring that only specific privileged users can register applications."
+              },
+              {
+                "id": "ms.aad.5.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  In **Microsoft Entra admin center**, select **Users**.\n\n2. Select **User settings**.\n\n3. For **Users can register applications**, select **No**.\n\n4. Click **Save**."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.5.2v1",
+            "title": "Restrict user consent to applications",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.5.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(10)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-5"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.5.2v1_smt",
+                "name": "statement",
+                "prose": "User consent to applications SHALL be restricted."
+              },
+              {
+                "id": "ms.aad.5.2v1_gdn",
+                "name": "guidance",
+                "prose": "Restricting user consent for applications reduces risk of users giving insecure applications access to their data via [consent grant attacks](https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/detect-and-remediate-illicit-consent-grants?view=o365-worldwide)."
+              },
+              {
+                "id": "ms.aad.5.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "There are a couple of configuration options to restrict user consent. Each option is described below, followed by its respective instructions.\n\n- **Option 1** - Most restrictive - Do not allow user consent for applications. An administrator is required to consent for all applications. Users can submit requests to use an application via the admin consent workflow but they cannot perform the consent themselves.\n- **Option 2** - More flexible - Allow users to consent to applications from Microsoft verified publishers that use low-risk permissions. When selecting this option, an administrator must configure a set of permissions considered low risk in the **Consent and permissions** > **Permission classifications** page in the Microsoft Entra admin center.\n\n**Option 1**. Do not allow user consent.\n\n1.  In **Microsoft Entra admin center** select **Enterprise Applications**.\n\n2. Under **Security**, select **Consent and permissions**. Then select **User Consent Settings**.\n\n3. Under **User consent for applications**, select **Do not allow user consent**.\n\n4. Click **Save**.\n\n**Option 2**. Allow restricted user consent.\n\n1.  In **Microsoft Entra admin center** select **Enterprise apps**.\n\n2. Under **Security**, select **Consent and permissions**. Then select **User Consent Settings**.\n\n3. Under **User consent for applications**, select **Allow user consent for apps from verified publishers, for selected permissions**.\n\n4. Click **Save**.\n\n5. In the page navigation menu, select **Permission classifications**.\n\n6. Click on the **Low** tab.\n\n7. [Add a list of low risk application permissions that users will be able to consent to](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-permission-classifications). We recommend only including permissions that provide minimal access to a user's data. For a reference of permissions that are considered risky and should be avoided [go to this JSON file and examine the permissions listed](https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/schemas/RiskyAppPermissions.json) in the **Delegated** sections under Microsoft Graph and other apps."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.5.3v1",
+            "title": "Configure admin consent workflow",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.5.3v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-4",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-4"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.5.3v1_smt",
+                "name": "statement",
+                "prose": "An admin consent workflow SHALL be configured for applications."
+              },
+              {
+                "id": "ms.aad.5.3v1_gdn",
+                "name": "guidance",
+                "prose": "Configuring an admin consent workflow reduces the risk of the previous policy by setting up a process for users to securely request access to applications necessary for business purposes. Administrators have the opportunity to review the permissions requested by new applications and approve or deny access based on a risk assessment."
+              },
+              {
+                "id": "ms.aad.5.3v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  In **Microsoft Entra admin center**  create a new Microsoft Entra ID Group that contains admin users responsible for reviewing and adjudicating application consent requests. Group members will be notified when users request consent for new applications.\n\n2. Then in **Microsoft Entra admin center**  under **Applications**, select **Enterprise Applications**.\n\n3. Under **Security**, select **Consent and permissions**. Then select **Admin consent settings**.\n\n4. Under **Admin consent requests** navigate to **Users can request admin consent to apps they are unable to consent to** and select **Yes**.\n\n5. Under **Who can review admin consent requests**, select **+ Add groups** and select the group responsible for reviewing and adjudicating app requests (created in step one above).\n\n6. Click **Save**."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.5.5v1",
+            "title": "Block application password addition",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.5.5v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-5"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.5.5v1_smt",
+                "name": "statement",
+                "prose": "Application Password Addition SHOULD be blocked."
+              },
+              {
+                "id": "ms.aad.5.5v1_gdn",
+                "name": "guidance",
+                "prose": "Applications that use client secrets might store them in configuration files, hardcode them in scripts, or risk exposure in other ways. The complexities of secret management make client secrets susceptible to leaks and attractive to attackers. Blocking password addition forces the use of more secure certificate-based authentication."
+              },
+              {
+                "id": "ms.aad.5.5v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. In **Microsoft Entra admin center**, select **Enterprise apps**.\n\n2. Under **Security**, select **Application policies**.\n\n3. Select **Block password addition**.\n\n4. Set status to **On**. Ensure **Applies to** is set to **All applications**.\n\n5. Leave **Only apply to apps created after** blank. Setting a date allows apps created before that date to bypass this restriction.\n\n6. Click **Save**."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.5.6v1",
+            "title": "Limit application password lifetime to 180 days",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.5.6v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-5"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-12",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-12"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.5.6v1_smt",
+                "name": "statement",
+                "prose": "Application password lifetime SHOULD be restricted to 180 days or less."
+              },
+              {
+                "id": "ms.aad.5.6v1_gdn",
+                "name": "guidance",
+                "prose": "Long-lived credentials increase the window of opportunity for attackers to exploit compromised secrets. Enforcing a maximum password lifetime of 180 days ensures regular credential rotation, reducing the impact of credential theft and improving overall security hygiene."
+              },
+              {
+                "id": "ms.aad.5.6v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. In **Microsoft Entra admin center**, select **Enterprise apps**.\n\n2. Under **Security**, select **Application policies**.\n\n3. Select **Restrict max password lifetime**.\n\n4. Set status to **On**. Set maximum lifetime to **181 days**. Ensure **Applies to** is set to **All applications**.\n\n5. Leave **Only apply to apps created after** blank. Setting a date allows apps created before that date to bypass this restriction.\n\n6. Click **Save**."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.5.7v1",
+            "title": "Limit application certificate lifetime to 365 days",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.5.7v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-12",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-12"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-5"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.5.7v1_smt",
+                "name": "statement",
+                "prose": "Application certificate lifetime SHOULD be restricted to 365 days or less."
+              },
+              {
+                "id": "ms.aad.5.7v1_gdn",
+                "name": "guidance",
+                "prose": "While certificates provide more secure authentication than passwords, long-lived certificates can still be compromised. Limiting certificate lifetime to 365 days reduces the risk of exploitation while balancing operational overhead. Regular certificate rotation is a security best practice that minimizes exposure from compromised keys."
+              },
+              {
+                "id": "ms.aad.5.7v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. In **Microsoft Entra admin center**, select **Enterprise apps**.\n\n2. Under **Security**, select **Application policies**.\n\n3. Select **Restrict max certificate lifetime**.\n\n4. Set status to **On**. Set maximum lifetime to **366 days**. Ensure **Applies to** is set to **All applications**.\n\n5. Leave **Only apply to apps created after** blank. Setting a date allows apps created before that date to bypass this restriction.\n\n6. Click **Save**."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.aad.6",
+        "title": "Passwords",
+        "controls": [
+          {
+            "id": "ms.aad.6.1v1",
+            "title": "User passwords do not expire",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.6.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ia-5.1",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 IA-5(1)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.6.1v1_smt",
+                "name": "statement",
+                "prose": "User passwords SHALL NOT expire."
+              },
+              {
+                "id": "ms.aad.6.1v1_gdn",
+                "name": "guidance",
+                "prose": "The National Institute of Standards and Technology (NIST), OMB, and Microsoft have published guidance indicating mandated periodic password changes make user accounts less secure. For example, OMB-22-09 states, \"Password policies must not require use of special characters or regular rotation.\""
+              },
+              {
+                "id": "ms.aad.6.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "> **Note:** Tenants created after October 2021 have password expiration disabled by default (`passwordValidityPeriodInDays = null`), which Microsoft treats as equivalent to \"never expire.\" Tenants created before October 2021, or any tenant where the policy was explicitly configured and then reverted, will show `2147483647` (INT_MAX). ScubaGear treats both values as compliant. The M365 admin center password expiration checkbox applies to all managed domains in the tenant. If a tenant has **multiple root domains**, use the PowerShell in Step 2 to audit all of them and remediate any that have a finite expiration period set.\n\n1. Sign in to the [Microsoft 365 admin center](https://admin.microsoft.com) and [configure the **Password expiration policy** to **Set passwords to never expire**](https://learn.microsoft.com/en-us/microsoft-365/admin/manage/set-password-expiration-policy?view=o365-worldwide#set-password-expiration-policy).\n\n2. Optionally, verify and remediate all root domains via PowerShell. This is useful if any domain had a finite expiration configured explicitly. This uses `Invoke-MgGraphRequest`, which is included with the `Microsoft.Graph.Authentication` module already required by ScubaGear. To audit only, connect with `Domain.Read.All`; to also remediate, use `Domain.ReadWrite.All`.\n\n  ```powershell\n  Connect-MgGraph -Scopes \"Domain.ReadWrite.All\" # or alternatively \"Domain.Read.All\" for determining which domains are in a non-compliant state.\n\n  $NonCompliantDomains = (Invoke-MgGraphRequest -Method GET -Uri \"https://graph.microsoft.com/v1.0/domains\").value | Where-Object {\n    $_.isRoot -and $_.isVerified -and\n    $null -ne $_.passwordValidityPeriodInDays -and\n    $_.passwordValidityPeriodInDays -ne [int32]::MaxValue\n  }\n\n  Write-Host $NonCompliantDomains | Format-List\n\n  # Remediate each non-compliant domain\n  Invoke-MgGraphRequest -Method PATCH -Uri \"https://graph.microsoft.com/v1.0/domains/example.com\" `\n    -Body @{ passwordValidityPeriodInDays = [int32]::MaxValue }\n\n  # Verify domain configurations\n  $AllDomains = (Invoke-MgGraphRequest -Method GET -Uri \"https://graph.microsoft.com/v1.0/domains\").value | Where-Object {\n    $_.isRoot -and $_.isVerified\n  }\n\n  Write-Host \"All current domain password expiration policies\"\n  foreach ($Domain in $AllDomains) {\n    Write-Host \"Domain passwordValidityPeriodInDays: $($Domain.id) $($Domain.passwordValidityPeriodInDays)\"\n  }\n  ```"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.aad.7",
+        "title": "Highly Privileged User Access",
+        "controls": [
+          {
+            "id": "ms.aad.7.1v1",
+            "title": "Limit Global Administrators to 2-8 users",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.7.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(5)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.7.1v1_smt",
+                "name": "statement",
+                "prose": "A minimum of two users and a maximum of eight users SHALL be provisioned with the Global Administrator role."
+              },
+              {
+                "id": "ms.aad.7.1v1_gdn",
+                "name": "guidance",
+                "prose": "The Global Administrator role provides unfettered access to the tenant. Limiting the number of users with this level of access makes tenant compromise more challenging. Microsoft recommends fewer than five users in the Global Administrator role. However, additional user accounts, up to eight, may be necessary to support emergency access and some operational scenarios."
+              },
+              {
+                "id": "ms.aad.7.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "When counting the number of users assigned to the Global Administrator role, count each user only once.\n\n1. In **Microsoft Entra admin center**  count the number of users assigned to the **Global Administrator** role. Count users that are assigned directly to the role and users assigned via group membership. If you have Microsoft Entra ID PIM, count both the **Eligible assignments** and **Active assignments**. If any of the groups assigned to Global Administrator are enrolled in PIM for Groups, also count the number of group members from the PIM for Groups portal **Eligible** assignments.\n\n2. Validate that there are a total of two to eight users assigned to the Global Administrator role."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.7.2v1",
+            "title": "Use finer-grained roles instead of Global Administrator",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.7.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-5"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.7.2v1_smt",
+                "name": "statement",
+                "prose": "Privileged users SHALL be provisioned with finer-grained roles instead of Global Administrator."
+              },
+              {
+                "id": "ms.aad.7.2v1_gdn",
+                "name": "guidance",
+                "prose": "Many privileged administrative users do not need unfettered access to the tenant to perform their duties. By assigning them to roles based on least privilege, the risks associated with having their accounts compromised are reduced."
+              },
+              {
+                "id": "ms.aad.7.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "This policy is based on the ratio below:\n\n`X = (Number of users assigned to the Global Administrator role) / (Number of users assigned to other highly privileged roles)`\n\n1. Follow the instructions for policy MS.AAD.7.1v1 above to get a count of users assigned to the Global Administrator role.\n\n2. Follow the instructions for policy MS.AAD.7.1v1 above but get a count of users assigned to the other highly privileged roles (not Global Administrator). If a user is assigned to both Global Administrator and other roles, only count that user for the Global Administrator assignment.\n\n3. Divide the value from step 2 from the value from step 1 to calculate X. If X is less than or equal to 1 then the tenant is compliant with the policy."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.7.3v1",
+            "title": "Cloud-only accounts for privileged users",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.7.3v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(5)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.7.3v1_smt",
+                "name": "statement",
+                "prose": "Privileged users SHALL be provisioned cloud-only accounts separate from an on-premises directory or other federated identity providers."
+              },
+              {
+                "id": "ms.aad.7.3v1_gdn",
+                "name": "guidance",
+                "prose": "By provisioning cloud-only Microsoft Entra ID user accounts to privileged users, the risks associated with a compromise of on-premises federation infrastructure are reduced. It is more challenging for the adversary to pivot from the compromised environment to the cloud with privileged access."
+              },
+              {
+                "id": "ms.aad.7.3v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Perform the steps below for each highly privileged role. We reference the Global Administrator role as an example.\n\n2. Create a list of all the users assigned to the **Global Administrator** role. Include users that are assigned directly to the role and users assigned via group membership. If you have Microsoft Entra ID PIM, include both the **Eligible assignments** and **Active assignments**. If any of the groups assigned to Global Administrator are enrolled in PIM for Groups, also include group members from the PIM for Groups portal **Eligible** assignments.\n\n3. For each highly privileged user in the list, execute the Powershell code below but replace the `username@somedomain.com` with the principal name of the user who is specific to your environment. You can get the data value from the **Principal name** field displayed in the Microsoft Entra ID portal.\n\n    ```\n    Connect-MgGraph\n    Get-MgBetaUser -Filter \"userPrincipalName eq 'username@somedomain.com'\" | FL\n    ```\n\n6. Review the output field named **OnPremisesImmutableId**. If this field contains a data value, it means that the  user is not cloud-only. If the user is not cloud-only, create a cloud-only account for that user, assign the user to their respective roles and then remove the account that is not cloud-only from Microsoft Entra ID."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.7.4v1",
+            "title": "No permanent active privileged role assignments",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.7.4v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-2",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-2"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.7.4v1_smt",
+                "name": "statement",
+                "prose": "Permanent active role assignments SHALL NOT be allowed for highly privileged roles."
+              },
+              {
+                "id": "ms.aad.7.4v1_gdn",
+                "name": "guidance",
+                "prose": "Instead of giving users permanent assignments to privileged roles, provisioning access just in time lessens exposure if those accounts become compromised. In Microsoft Entra ID PIM or an alternative PAM system, just in time access can be provisioned by assigning users to roles as eligible instead of perpetually active."
+              },
+              {
+                "id": "ms.aad.7.4v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. In **Microsoft Entra admin center**  select **Roles and admins**. Perform the steps below for each highly privileged role. We reference the Global Administrator role as an example.\n\n2. Select the **Global Administrator** role.\n\n3. Under **Manage**, select **Assignments** and click the **Active assignments** tab.\n\n4. Verify there are no users or groups with a value of **Permanent** in the **End time** column. If there are any, recreate those assignments to have an expiration date using Microsoft Entra ID PIM or an alternative PAM system. If a group is identified and it is enrolled in PIM for Groups, see the exception cases below for details.\n\nException cases:\n- Emergency access accounts that require perpetual active assignment.\n- Service accounts that require perpetual active assignment.\n- If using PIM for Groups, a group that is enrolled in PIM is allowed to have a perpetual active assignment to a role because activation is handled by PIM for Groups."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.7.5v1",
+            "title": "Provision privileged roles only through PAM",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.7.5v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-2",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-2"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.7.5v1_smt",
+                "name": "statement",
+                "prose": "Provisioning users to highly privileged roles SHALL NOT occur outside of a PAM system."
+              },
+              {
+                "id": "ms.aad.7.5v1_gdn",
+                "name": "guidance",
+                "prose": "Provisioning users to privileged roles within a PAM system enables enforcement of numerous privileged access policies and monitoring. If privileged users are assigned directly to roles in the M365 admin center or via PowerShell outside of the context of a PAM system, a significant set of critical security capabilities are bypassed."
+              },
+              {
+                "id": "ms.aad.7.5v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Perform the steps below for each highly privileged role. We reference the Global Administrator role as an example.\n\n2. In **Microsoft Entra admin center**  select **Roles and Admins**.\n\n3. Select the **Global Administrator** role.\n\n4. Under **Manage**, select **Assignments** and click the **Active assignments** tab.\n\n5. For each user or group listed, examine the value in the **Start time** column. If it contains a value of **-**, this indicates the respective user/group was assigned to that role outside of Microsoft Entra ID PIM. If the role was assigned outside of Microsoft Entra ID PIM, delete the assignment and recreate it using Microsoft Entra ID PIM."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.7.6v1",
+            "title": "Require approval for Global Administrator activation",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.7.6v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.1",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(1)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.7.6v1_smt",
+                "name": "statement",
+                "prose": "Activation of the Global Administrator role SHALL require approval."
+              },
+              {
+                "id": "ms.aad.7.6v1_gdn",
+                "name": "guidance",
+                "prose": "Requiring approval for a user to activate Global Administrator, which provides unfettered access, makes it more challenging for an attacker to compromise the tenant with stolen credentials, and it provides visibility of activities indicating a compromise is taking place."
+              },
+              {
+                "id": "ms.aad.7.6v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. In **Microsoft Entra admin center**, under **Identity Governance**, select **Privileged Identity Management (PIM)**, and then select **Microsoft Entra roles**.\n\n2. Under **Manage**, select **Roles**.\n\n  1.  Select the **Global Administrator** role in the list.\n  2.  Click **Role settings**.\n  3.  Click **Edit**.\n  4.  Select the **Require approval to activate** option.\n  5.  Click **Update**.\n\n3. Review the list of groups that are actively assigned to the **Global Administrator** role. If any of the groups are enrolled in PIM for Groups, also apply the same configurations as steps 2-7 above to each PIM group's **Member** settings."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.7.7v1",
+            "title": "Alert on privileged role assignments",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.7.7v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-2.1",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-2(1)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.7.7v1_smt",
+                "name": "statement",
+                "prose": "Eligible and active highly privileged role assignments SHALL trigger an alert."
+              },
+              {
+                "id": "ms.aad.7.7v1_gdn",
+                "name": "guidance",
+                "prose": "Closely monitor assignment of the highest privileged roles for signs of compromise. Send assignment alerts to enable the security monitoring team to detect compromise attempts."
+              },
+              {
+                "id": "ms.aad.7.7v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  In **Microsoft Entra admin center**, under **Identity Governance**, select **Privileged Identity Management (PIM)**, and then select **Microsoft Entra roles**.\n\n2. Under **Manage**, select **Roles**. Perform the steps below for each highly privileged role. We reference the Global Administrator role as an example:\n\n  1. Click the **Global Administrator** role.\n  2. Click **Role settings** and then click **Edit**.\n  3. Click the **Notifications** tab.\n  4. Under **Send notifications when members are assigned as eligible to this role**, in the **Role assignment alert > Additional recipients** textbox, enter the email address of the security monitoring mailbox configured to receive privileged role assignment alerts.\n  5. Under **Send notifications when members are assigned as active to this role**, in the **Role assignment alert > Additional recipients** textbox, enter the email address of the security monitoring mailbox configured to receive privileged role assignment alerts.\n  6. Click **Update**.\n\n3. For each of the highly privileged roles, if they have any PIM groups actively assigned to them, apply the same configurations as steps 2-8 above to each PIM group's **Member** settings."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.7.8v1",
+            "title": "Alert on Global Administrator activation",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.7.8v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.9",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(9)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.7.8v1_smt",
+                "name": "statement",
+                "prose": "User activation of the Global Administrator role SHALL trigger an alert."
+              },
+              {
+                "id": "ms.aad.7.8v1_gdn",
+                "name": "guidance",
+                "prose": "Closely monitor activation of the Global Administrator role for signs of compromise. Send activation alerts to enable the security monitoring team to detect compromise attempts."
+              },
+              {
+                "id": "ms.aad.7.8v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. In **Microsoft Entra admin center**, under **Identity Governance**, select **Privileged Identity Management (PIM)**. Select **Microsoft Entra roles**.\n\n2. Click the **Global Administrator** role.\n\n3. Click **Role settings** then click **Edit**.\n\n4. Click the **Notifications** tab.\n\n5. Under **Send notifications when eligible members activate this role**, in the **Role activation alert** select the  **Additional recipients** textbox and enter the email address of the security monitoring mailbox configured to receive Global Administrator activation alerts.\n\n6. Click **Update**.\n\n7. If the Global Administrator role has any PIM groups actively assigned to it, then also apply the same configurations per the steps above to each PIM group's **Member** settings."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.7.9v1",
+            "title": "Alert on other privileged role activation",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.7.9v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.9",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(9)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.7.9v1_smt",
+                "name": "statement",
+                "prose": "User activation of other highly privileged roles SHOULD trigger an alert."
+              },
+              {
+                "id": "ms.aad.7.9v1_gdn",
+                "name": "guidance",
+                "prose": "Closely monitor activation of high-risk roles for signs of compromise. Send activation alerts to enable the security monitoring team to detect compromise attempts. In some environments, activating privileged roles can generate a significant number of alerts."
+              },
+              {
+                "id": "ms.aad.7.9v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Follow the same instructions as MS.AAD.7.8v1 for each of the highly privileged roles (other than Global Administrator) but enter a security monitoring mailbox different from the one used to monitor Global Administrator activations.\n\n 2. For each of the highly privileged roles, if they have any PIM groups actively assigned to them, then also apply the same configurations per step 1 to each PIM group's **Member** settings."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.aad.8",
+        "title": "Guest User Access",
+        "controls": [
+          {
+            "id": "ms.aad.8.1v1",
+            "title": "Limit guest access to directory objects",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.8.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.8.1v1_smt",
+                "name": "statement",
+                "prose": "Guest users SHOULD have limited or restricted access to Microsoft Entra ID directory objects."
+              },
+              {
+                "id": "ms.aad.8.1v1_gdn",
+                "name": "guidance",
+                "prose": "Limiting the amount of object information available to guest users in the tenant, reduces malicious reconnaissance exposure if a guest account is compromised or created by an adversary."
+              },
+              {
+                "id": "ms.aad.8.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. In **Microsoft Entra admin center**  select **External Identities > External collaboration settings**.\n\n2. Under **Guest user access**, select either **Guest users have limited access to properties and memberships of directory objects** or **Guest user access is restricted to properties and memberships of their own directory objects (most restrictive)**.\n\n3. Click **Save**."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.8.2v1",
+            "title": "Only Guest Inviters can invite guests",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.8.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(10)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.8.2v1_smt",
+                "name": "statement",
+                "prose": "Only users with the Guest Inviter role SHOULD be able to invite guest users."
+              },
+              {
+                "id": "ms.aad.8.2v1_gdn",
+                "name": "guidance",
+                "prose": "By only allowing an authorized group of individuals to invite external users to create accounts in the tenant, an agency can enforce a guest user account approval process, reducing the risk of unauthorized account creation."
+              },
+              {
+                "id": "ms.aad.8.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. In **Microsoft Entra admin center**  select **External Identities > External collaboration settings**.\n\n2.  Under **Guest invite settings**, select **Only users assigned to specific admin roles can invite guest users**.\n\n3. Click **Save**."
+              }
+            ]
+          },
+          {
+            "id": "ms.aad.8.3v1",
+            "title": "Allow guest invites only to approved domains",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.8.3v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-3"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.8.3v1_smt",
+                "name": "statement",
+                "prose": "Guest invites SHOULD only be allowed to specific external domains that have been authorized by the agency for legitimate business purposes."
+              },
+              {
+                "id": "ms.aad.8.3v1_gdn",
+                "name": "guidance",
+                "prose": "Limiting which domains can be invited to create guest accounts in the tenant helps reduce the risk of users from unauthorized external organizations getting access."
+              },
+              {
+                "id": "ms.aad.8.3v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. In **Microsoft Entra admin center**  select **External Identities > External collaboration settings**.\n\n2. Under **Collaboration restrictions**, select **Allow invitations\n    only to the specified domains (most restrictive)**.\n\n3. Select **Target domains** and enter the names of the external domains authorized by the agency for guest user access.\n\n4. Click **Save**."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.aad.9",
+        "title": "AI Security",
+        "controls": [
+          {
+            "id": "ms.aad.9.1v1",
+            "title": "Block risky AI agents",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.AAD.9.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-3"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-7.4",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-7(4)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.aad.9.1v1_smt",
+                "name": "statement",
+                "prose": "Risky AI agents SHALL be blocked."
+              },
+              {
+                "id": "ms.aad.9.1v1_gdn",
+                "name": "guidance",
+                "prose": "AI agents may access tenant resources and can perform actions autonomously. Blocking agents that exhibit risky behaviors reduces the risk of unauthorized access and automated misuse of resources."
+              },
+              {
+                "id": "ms.aad.9.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Create a conditional access policy blocking High Risk AI Agents. Configure the following policy settings in the new conditional access policy, per the values below:\n\n<pre>\n  Assignments > Users, agents (Preview) or workload identities > What does this policy apply to? > Agents (Preview) > Include > <b>All agent identities (Preview) </b>\n\n  Target resources > Include > <b>All resources (formerly 'All cloud apps') </b>\n\n  Conditions > Agent risk (Preview) > Configure > Yes > Configure agent risk levels needed for policy to be enforced > <b>High </b>\n</pre>"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
