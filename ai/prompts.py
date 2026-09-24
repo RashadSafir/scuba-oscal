@@ -33,6 +33,32 @@ leadership audience: 1 short paragraph on overall posture, then the top risks as
 list in priority order (each citing its control id), then one sentence on the recommended next \
 step. Under 200 words."""
 
+COMPLIANCE_REPORT_REQUEST = """\
+Write a compliance report on this tenant's Microsoft Entra ID configuration against the CISA \
+SCuBA MS.AAD baseline, for security and compliance stakeholders. Write in full sentences in a \
+formal, professional tone. This is a detailed document, so the usual length limit does not \
+apply: aim for 700 to 1100 words. Do not add a document title; the report template adds one.
+
+Use Markdown with exactly these `##` sections, in this order:
+## Executive summary
+Two short paragraphs: the overall posture with the passed, failed and not-assessed counts, and \
+the most important risks.
+## Scope and method
+The baseline, tenant, scan date and ScubaGear version from the facts, and that every status \
+comes from the OSCAL assessment results, not from this analysis.
+## Findings
+One `###` subsection per failed control, in priority order (high before moderate), headed with \
+the control id and title. For each: what the control requires, what the scan found (say when \
+ScubaGear reported it as a Warning rather than a Fail), why it matters (clearly as analysis), and \
+the remediation steps, based on the record's remediation text.
+## Controls that passed
+A short paragraph naming each passing control.
+## Not assessed
+Only if any control is NOT ASSESSED: one short paragraph saying how many controls ScubaGear did \
+not evaluate and that their status is unknown, then list their ids. Do not guess their state.
+## Recommended next steps
+A numbered list in priority order."""
+
 EXPLAIN_REQUEST = """\
 Explain control `{control_id}` for this tenant: what it requires, what the scan found, why it \
 matters, and (if it failed) how to fix it, in that order."""

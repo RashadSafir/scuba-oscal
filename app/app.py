@@ -4,9 +4,9 @@ Run from the repo root:  streamlit run app/app.py
 
 Everything typed in the chat goes to ai.answer(question, history). Each reply shows the AI's
 analysis, labelled as AI output, next to the verified OSCAL facts for every control it cites.
-The scan summary and the downloadable report come from the same verified records the AI reads
-(ai/findings.py), so the page and the AI always agree. Azure OpenAI settings come from .env
-(see .env.example).
+The scan summary comes from the same verified records the AI reads (ai/findings.py), so the page
+and the AI always agree. The compliance report is written by the AI (Assistant.compliance_report)
+and turned into a PDF by report_pdf.py. Azure OpenAI settings come from .env (see .env.example).
 """
 import importlib.util
 import logging
@@ -17,11 +17,13 @@ from pathlib import Path
 
 import streamlit as st
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+sys.path[:0] = [str(ROOT), str(HERE)]
 
 from ai.assistant import ENV_VARS, Assistant  # noqa: E402
 from ai.findings import prioritized_failures  # noqa: E402
+from report_pdf import build_pdf  # noqa: E402
 
 log = logging.getLogger(__name__)
 
@@ -88,7 +90,7 @@ def ask(assistant, request, history):
     return assistant.answer(request["prompt"], history)
 
 
-# --- Report (verified facts only, no AI) --------------------------------------
+# --- Compliance report (AI-written, delivered as a PDF) ------------------------
 def format_time(iso):
     try:
         return datetime.fromisoformat(iso).astimezone(timezone.utc).strftime("%d %b %Y, %H:%M UTC")
@@ -96,54 +98,25 @@ def format_time(iso):
         return iso or "unknown"
 
 
-def build_report(findings, info, summary):
-    failures = prioritized_failures(findings)
-    lines = [
-        "# SCuBA assessment report: Microsoft Entra ID",
-        "",
-        f"- Tenant: {info.get('tenant') or 'unknown'} ({info.get('domain') or 'unknown domain'})",
-        f"- Scanned: {format_time(info.get('scan_time'))} with ScubaGear {info.get('tool_version') or 'unknown'}",
-        f"- Generated: {datetime.now(timezone.utc).strftime('%d %b %Y, %H:%M UTC')}",
-        "",
-        "_Built from the verified OSCAL results. This report contains no AI-generated content._",
-        "",
-        "## Summary",
-        "",
-        "| Passing | Failing | Not assessed | Total |",
-        "|---|---|---|---|",
-        f"| {summary['passed']} | {summary['failed']} | {summary['not_assessed']} | {summary['total']} |",
-        "",
-        "## Controls to fix, in priority order",
-        "",
-    ]
-    if not failures:
-        lines += ["No failing controls.", ""]
-    for f in failures:
-        lines += [
-            f"### {f.control_id}: {f.title}",
-            "",
-            f"**Priority:** {f.priority} · **Obligation:** {f.obligation} · **Area:** {f.group}",
-            "",
-            f"**Requirement:** {f.requirement}",
-            "",
-            f"**Scan result:** {f.finding or 'No details recorded.'}",
-            "",
-            "**Remediation (SCuBA guidance)**",
-            "",
-            f.remediation or "None recorded.",
-            "",
-        ]
-    passing = [f for f in findings if f.status == "PASS"]
-    if passing:
-        lines += ["## Passing controls", "", "| Control | Title |", "|---|---|"]
-        lines += [f"| {f.control_id} | {f.title} |" for f in passing]
-        lines.append("")
-    unassessed = [f for f in findings if f.status == "NOT ASSESSED"]
-    if unassessed:
-        lines += ["## Not assessed", "", "| Control | Title |", "|---|---|"]
-        lines += [f"| {f.control_id} | {f.title} |" for f in unassessed]
-        lines.append("")
-    return "\n".join(lines)
+def generate_report(assistant):
+    """Have the AI write the report, then build the PDF. Keeps the result, or the error, in session state."""
+    st.session_state.report_requested = False
+    st.session_state.report_error = None
+    try:
+        reply = assistant.compliance_report()
+    except Exception as exc:
+        log.exception("Compliance report request failed")
+        st.session_state.report_error = friendly_error(exc)
+        return
+    try:
+        generated = datetime.now(timezone.utc)
+        pdf = build_pdf(reply, assistant.findings, assistant.info, assistant.summary, generated)
+    except Exception:
+        log.exception("Could not build the report PDF")
+        st.session_state.report_error = "The AI wrote the report, but the PDF could not be built. Try again."
+        return
+    st.session_state.report = {"pdf": pdf, "generated": generated,
+                               "file_name": f"scuba-compliance-report-{generated:%Y-%m-%d}.pdf"}
 
 
 # --- Rendering ----------------------------------------------------------------
@@ -206,6 +179,10 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 if "pending" not in st.session_state:
     st.session_state.pending = None
+if "report" not in st.session_state:
+    st.session_state.report = None             # {"pdf", "generated", "file_name"} once generated
+    st.session_state.report_requested = False
+    st.session_state.report_error = None
 
 
 def queue(kind, prompt, control_id=None):
@@ -222,6 +199,10 @@ def pick_suggestion():
 def clear_conversation():
     st.session_state.messages = []
     st.session_state.pending = None
+
+
+def request_report():
+    st.session_state.report_requested = True
 
 
 # --- Page ---------------------------------------------------------------------
@@ -261,12 +242,12 @@ with st.sidebar:
     st.markdown("**Actions**")
     st.button("Executive summary", icon=":material/summarize:", width="stretch", disabled=bool(problem),
               on_click=queue, args=("summary", "Give me an executive summary of our Entra ID security posture."))
-    st.download_button("Download report", data=lambda: build_report(findings, info, summary),
-                       file_name="scuba-assessment-report.md", mime="text/markdown",
-                       icon=":material/download:", width="stretch", on_click="ignore",
-                       help="Verified scan results and SCuBA remediation steps. No AI content.")
     st.button("New conversation", icon=":material/restart_alt:", type="tertiary", on_click=clear_conversation,
               disabled=not st.session_state.messages)
+
+    st.space("small")
+    st.markdown("**Compliance report**")
+    report_slot = st.container()  # filled at the end of the script, so the page renders before the slow AI call
 
 st.title("SCuBA posture assistant", icon=ASSISTANT_AVATAR)
 st.caption("Ask about your tenant's CISA SCuBA assessment. Answers are AI-generated and cite the "
@@ -337,3 +318,19 @@ if request:
             msg = {"role": "assistant", "content": friendly_error(exc), "error": True}
         render_reply(msg)
     st.session_state.messages.append(msg)
+
+with report_slot:
+    if st.session_state.report_requested and not problem:
+        with st.spinner("The AI is writing the report. This can take a minute…"):
+            generate_report(assistant)
+    report = st.session_state.report
+    if report:
+        st.download_button("Download PDF", data=report["pdf"], file_name=report["file_name"],
+                           mime="application/pdf", icon=":material/download:", type="primary",
+                           width="stretch", on_click="ignore")
+        st.caption(f"Generated {report['generated']:%d %b %Y, %H:%M UTC}. AI-written; review it before sharing.")
+    if st.session_state.report_error:
+        st.error(st.session_state.report_error.replace("`", ""), icon=":material/error:")
+    st.button("Regenerate report" if report else "Generate PDF report", icon=":material/picture_as_pdf:",
+              width="stretch", disabled=bool(problem), on_click=request_report,
+              help="The AI writes a compliance report from the verified scan results, delivered as a PDF.")

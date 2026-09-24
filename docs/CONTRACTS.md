@@ -28,6 +28,7 @@ answer(question: str, history: list[{"role", "content"}] | None = None) -> {
 }
 default_assistant().explain(control_id)      # same shape, for "Ask AI about this finding"
 default_assistant().executive_summary()      # same shape
+default_assistant().compliance_report()      # same shape; long-form Markdown report (the app turns it into a PDF)
 ai.reload()                                  # after oscal/findings.json is regenerated (new upload)
 ```
 Finding fields: control_id, title, group, obligation, status (PASS | FAIL | NOT ASSESSED), priority,

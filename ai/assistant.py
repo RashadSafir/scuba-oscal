@@ -23,7 +23,7 @@ import os
 import re
 
 from . import findings as fm
-from .prompts import EXECUTIVE_SUMMARY_REQUEST, EXPLAIN_REQUEST, build_messages
+from .prompts import COMPLIANCE_REPORT_REQUEST, EXECUTIVE_SUMMARY_REQUEST, EXPLAIN_REQUEST, build_messages
 
 ENV_VARS = ("AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_API_KEY", "AZURE_OPENAI_DEPLOYMENT")
 HISTORY_TURNS = 6   # earlier messages sent along for follow-up questions ("why does that matter?")
@@ -99,6 +99,10 @@ class Assistant:
 
     def executive_summary(self):
         return self.answer(EXECUTIVE_SUMMARY_REQUEST)
+
+    def compliance_report(self):
+        """Long-form compliance report in Markdown, same reply shape as answer()."""
+        return self.answer(COMPLIANCE_REPORT_REQUEST)
 
 
 _default = None
