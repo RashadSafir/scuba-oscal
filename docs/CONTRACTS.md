@@ -15,4 +15,18 @@
 - oscal/poam.json
 
 ## AI interface (Role 3)
-answer(question: str) -> {"text": str, "citations": list[str]}
+Code: `ai/` (`from ai import answer, default_assistant`). Facts come from `ai/findings.py` (plain code, no AI).
+
+```
+answer(question: str, history: list[{"role", "content"}] | None = None) -> {
+    "text": str,                     # AI-generated analysis (Markdown); label it as AI output
+    "verified": list[Finding dict],  # OSCAL facts for every control the text cites
+    "citations": list[{"id", "kind", "status", "title"}],
+    "unverified_references": list[str],  # ids the model mentioned that are not in the assessment
+}
+default_assistant().explain(control_id)      # same shape, for "Ask AI about this finding"
+default_assistant().executive_summary()      # same shape
+ai.reload()                                  # after oscal/*.json is regenerated (new upload)
+```
+Finding fields: control_id, title, group, obligation, status (PASS | FAIL | NOT ASSESSED), priority,
+requirement, rationale, finding, evidence, scuba_result, remediation, nist
