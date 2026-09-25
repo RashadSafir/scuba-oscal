@@ -4,4 +4,3 @@ openai
 python-dotenv
 pytest
 fpdf2
-markdown

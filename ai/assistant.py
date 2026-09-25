@@ -19,6 +19,7 @@ Try it from the command line:  python -m ai.assistant "What should we fix first?
                                python -m ai.assistant --findings path/to/findings.json "..."
 """
 import argparse
+import json
 import os
 import re
 
@@ -42,6 +43,45 @@ def make_client():
     client = OpenAI(base_url=os.environ["AZURE_OPENAI_ENDPOINT"].rstrip("/") + "/openai/v1/",
                     api_key=os.environ["AZURE_OPENAI_API_KEY"])
     return client, os.environ["AZURE_OPENAI_DEPLOYMENT"]
+
+
+def _strings(value):
+    """A list of non-empty strings from a JSON value that should be a string or a list of strings."""
+    if isinstance(value, str):
+        value = [value]
+    if not isinstance(value, list):
+        return []
+    return [v.strip() for v in value if isinstance(v, str) and v.strip()]
+
+
+def parse_report(text, failed_ids):
+    """The report JSON asked for by COMPLIANCE_REPORT_REQUEST, cleaned up, or None if unusable.
+
+    Tolerates a reply wrapped in ```json fences or with text around the object. Findings keyed by
+    anything other than a failed control's id are dropped: the analysis may only explain failures."""
+    body = re.sub(r"^\s*```(?:json)?|```\s*$", "", text or "").strip()
+    start, end = body.find("{"), body.rfind("}")
+    if start < 0 or end < start:
+        return None
+    try:
+        data = json.loads(body[start:end + 1])
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(data, dict):
+        return None
+    by_id = {cid.lower(): cid for cid in failed_ids}
+    raw_findings = data.get("findings") if isinstance(data.get("findings"), dict) else {}
+    findings = {}
+    for key, value in raw_findings.items():
+        cid = by_id.get(str(key).strip().strip("`").lower())
+        if cid and isinstance(value, dict):
+            findings[cid] = {"why_it_matters": " ".join(_strings(value.get("why_it_matters"))),
+                             "how_to_fix": _strings(value.get("how_to_fix"))}
+    report = {"executive_summary": _strings(data.get("executive_summary")), "findings": findings,
+              "next_steps": _strings(data.get("next_steps"))}
+    if not (report["executive_summary"] or findings or report["next_steps"]):
+        return None
+    return report
 
 
 class Assistant:
@@ -101,8 +141,14 @@ class Assistant:
         return self.answer(EXECUTIVE_SUMMARY_REQUEST)
 
     def compliance_report(self):
-        """Long-form compliance report in Markdown, same reply shape as answer()."""
-        return self.answer(COMPLIANCE_REPORT_REQUEST)
+        """The AI's analysis for the compliance report. Same reply shape as answer(), plus "report":
+        {"executive_summary": [paragraph], "findings": {control id: {"why_it_matters": str,
+        "how_to_fix": [step]}}, "next_steps": [action]}, or None when the model's reply is not the
+        JSON asked for. Only failed controls can appear in "findings"; the facts stay with the caller."""
+        failed = [f.control_id for f in fm.prioritized_failures(self.findings)]
+        reply = self.answer(COMPLIANCE_REPORT_REQUEST.format(failed_ids=", ".join(failed) or "none"))
+        reply["report"] = parse_report(reply["text"], failed)
+        return reply
 
 
 _default = None

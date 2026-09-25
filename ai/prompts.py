@@ -34,30 +34,32 @@ list in priority order (each citing its control id), then one sentence on the re
 step. Under 200 words."""
 
 COMPLIANCE_REPORT_REQUEST = """\
-Write a compliance report on this tenant's Microsoft Entra ID configuration against the CISA \
-SCuBA MS.AAD baseline, for security and compliance stakeholders. Write in full sentences in a \
-formal, professional tone. This is a detailed document, so the usual length limit does not \
-apply: aim for 700 to 1100 words. Do not add a document title; the report template adds one.
+Write the analysis for a compliance report on this tenant's Microsoft Entra ID configuration \
+against the CISA SCuBA MS.AAD baseline, for security and compliance stakeholders. The report \
+template already shows every fact itself: tenant, scan date, counts, each control's requirement, \
+scan result, status and priority, and the lists of passing and not-assessed controls. Do not \
+repeat those; write only the analysis below, in full sentences and a formal, professional tone.
 
-Use Markdown with exactly these `##` sections, in this order:
-## Executive summary
-Two short paragraphs: the overall posture with the passed, failed and not-assessed counts, and \
-the most important risks.
-## Scope and method
-The baseline, tenant, scan date and ScubaGear version from the facts, and that every status \
-comes from the OSCAL assessment results, not from this analysis.
-## Findings
-One `###` subsection per failed control, in priority order (high before moderate), headed with \
-the control id and title. For each: what the control requires, what the scan found (say when \
-ScubaGear reported it as a Warning rather than a Fail), why it matters (clearly as analysis), and \
-the remediation steps, based on the record's remediation text.
-## Controls that passed
-A short paragraph naming each passing control.
-## Not assessed
-Only if any control is NOT ASSESSED: one short paragraph saying how many controls ScubaGear did \
-not evaluate and that their status is unknown, then list their ids. Do not guess their state.
-## Recommended next steps
-A numbered list in priority order."""
+Reply with one JSON object and nothing else (no Markdown fences, no text before or after), in \
+exactly this shape:
+{{
+  "executive_summary": ["paragraph", "paragraph"],
+  "findings": {{
+    "<control id of a failed control>": {{
+      "why_it_matters": "2 to 3 sentences of risk analysis",
+      "how_to_fix": ["step", "step"]
+    }}
+  }},
+  "next_steps": ["action", "action"]
+}}
+
+- executive_summary: 2 short paragraphs on the overall posture and the most important risks, \
+citing control ids. Do not restate the tenant, scan date or counts.
+- findings: one entry for every FAILED control and no others, keyed by its exact control id \
+({failed_ids}). how_to_fix is 2 to 4 short, concrete steps based on that control's remediation \
+text; say when a step goes beyond the SCuBA guidance.
+- next_steps: 4 to 8 actions in priority order (high before moderate), each citing its control ids.
+- Inside the strings, write control ids in backticks, e.g. `MS.AAD.7.4v1`. No other Markdown."""
 
 EXPLAIN_REQUEST = """\
 Explain control `{control_id}` for this tenant: what it requires, what the scan found, why it \

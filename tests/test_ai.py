@@ -151,3 +151,44 @@ def test_missing_config_names_vars_only(monkeypatch):
     with pytest.raises(RuntimeError) as e:
         am.make_client()
     assert "AZURE_OPENAI_ENDPOINT" in str(e.value) and "sk-secret-value" not in str(e.value)
+
+
+# --- compliance report (structured JSON from the model) ---------------------------------------
+
+def failed_ids():
+    return [f.control_id for f in fm.prioritized_failures(fm.load_findings())]
+
+
+def report_json(findings):
+    return json.dumps({"executive_summary": ["Posture paragraph citing `MS.AAD.7.4v1`."],
+                       "findings": findings, "next_steps": ["Fix the high-priority controls first."]})
+
+
+def test_report_prompt_lists_the_failed_controls():
+    a, client = assistant(report_json({}))
+    a.compliance_report()
+    prompt = client.sent[-1][-1]["content"]
+    assert all(cid in prompt for cid in failed_ids())
+
+
+def test_report_parses_and_keeps_only_failed_controls():
+    failed = failed_ids()
+    passed = next(f.control_id for f in fm.load_findings() if f.status == "PASS")
+    reply_text = "```json\n" + report_json({
+        failed[0]: {"why_it_matters": "Risk.", "how_to_fix": ["Step one.", "Step two."]},
+        f"`{failed[-1].lower()}`": {"why_it_matters": "Other risk.", "how_to_fix": "Single step."},
+        passed: {"why_it_matters": "Should be dropped.", "how_to_fix": []},
+        "MS.AAD.99.1v1": {"why_it_matters": "Not in the assessment.", "how_to_fix": []},
+    }) + "\n```"
+    a, _ = assistant(reply_text)
+    report = a.compliance_report()["report"]
+    assert set(report["findings"]) == {failed[0], failed[-1]}      # ids normalised; others dropped
+    assert report["findings"][failed[0]]["how_to_fix"] == ["Step one.", "Step two."]
+    assert report["findings"][failed[-1]]["how_to_fix"] == ["Single step."]
+    assert report["executive_summary"] and report["next_steps"]
+
+
+def test_report_that_is_not_json_gives_none():
+    for text in ["Here is a Markdown report instead.", "{not json", '["a list"]', "{}"]:
+        a, _ = assistant(text)
+        assert a.compliance_report()["report"] is None, text

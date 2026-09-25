@@ -18,6 +18,7 @@ import importlib.util
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -236,7 +237,16 @@ def generate_report(assistant):
         st.session_state.report_error = "The AI wrote the report, but the PDF could not be built. Try again."
         return
     st.session_state.report = {"pdf": pdf, "generated": generated,
-                               "file_name": f"scuba-compliance-report-{generated:%Y-%m-%d}.pdf"}
+                               "file_name": report_file_name(assistant.info.get("tenant"), generated)}
+
+
+def report_file_name(tenant, generated):
+    """<tenant>-scuba-compliance-report-<YYYY-MM-DD>-<HHMMSS>.pdf, time in UTC.
+
+    The tenant name comes from the uploaded scan, so anything a file name can't hold (spaces,
+    slashes, colons...) becomes a hyphen. The time has no colons, which Windows file names forbid."""
+    safe = re.sub(r"[^A-Za-z0-9._-]+", "-", tenant or "").strip("-.") or "tenant"
+    return f"{safe}-scuba-compliance-report-{generated:%Y-%m-%d}-{generated:%H%M%S}.pdf"
 
 
 # --- Rendering ----------------------------------------------------------------
