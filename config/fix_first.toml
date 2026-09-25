@@ -1,0 +1,66 @@
+# How the "Fix first" list is ordered (app/fix_first.py reads this file).
+#
+# Every failed control gets a score: the sum of the points below. Higher scores come first.
+# The reason shown on each row names the factors that scored, so the order can be explained.
+# These are the team's judgement calls: DRAFT values, review them before relying on the order.
+
+# A failed requirement's obligation. Required (SHALL / SHALL NOT) always outranks Recommended,
+# so the list agrees with the rest of the app and the POA&M priority.
+[obligation]
+"SHALL" = 100
+"SHALL NOT" = 100
+"SHOULD" = 0
+"SHOULD NOT" = 0
+
+# Exposure: what the control protects, matched on words in its title and area (lowercase).
+# Only the highest-scoring match counts.
+[[exposure]]
+label = "privileged access"
+points = 30
+words = ["privileged", "administrator", "admin", " role"]
+
+[[exposure]]
+label = "sign-in security"
+points = 20
+words = ["authentication", "mfa", "sign-in", "phishing", "password", "legacy", "device code", "otp"]
+
+[[exposure]]
+label = "external exposure"
+points = 15
+words = ["external", "guest", "sharing", "forwarding", "anonymous", "public", "consent", "third-party", "publish to web"]
+
+# NIST SP 800-53 family of the control's related controls; the highest one counts.
+[family]
+AC = 10   # access control
+IA = 10   # identification and authentication
+SC = 5    # system and communications protection
+SI = 5    # system and information integrity
+AU = 5    # audit and accountability
+CM = 3    # configuration management
+
+# Effort to fix, per control. "quick" = a setting change; "project" = needs planning or rollout.
+# Controls not listed score nothing for effort. Fill this in as the team learns the fixes.
+[effort]
+points = { quick = 5, project = -5 }
+controls = {}   # e.g. { "MS.AAD.7.1v1" = "quick", "MS.AAD.3.1v1" = "project" }
+
+# Controls that one change fixes together. The list shows them as one item.
+[[related]]
+name = "Phishing-resistant MFA"
+controls = ["MS.AAD.3.1v1", "MS.AAD.3.6v1"]
+
+[[related]]
+name = "Privileged access through PIM"
+controls = ["MS.AAD.7.4v1", "MS.AAD.7.5v1", "MS.AAD.7.6v1"]
+
+[[related]]
+name = "Alerts on privileged role use"
+controls = ["MS.AAD.7.7v1", "MS.AAD.7.8v1", "MS.AAD.7.9v1"]
+
+[[related]]
+name = "Managed devices for sign-in"
+controls = ["MS.AAD.3.7v1", "MS.AAD.3.8v1"]
+
+[[related]]
+name = "Defender preset security policies"
+controls = ["MS.DEFENDER.1.1v1", "MS.DEFENDER.1.2v1", "MS.DEFENDER.1.3v1", "MS.DEFENDER.1.4v1", "MS.DEFENDER.1.5v1"]

@@ -18,9 +18,13 @@ which the catalog is the authority over). See PRIORITY below; change the mapping
 If nothing failed there is nothing to plan, and OSCAL does not allow an empty POA&M, so no
 file is written.
 
+Milestones: each risk's remediation lists the same three steps as OSCAL milestone tasks (see
+MILESTONES): plan the change, apply it, verify with a ScubaGear rescan. They have no dates: only the
+people fixing the issues can set deadlines (the app adds a person's target date as the risk's
+deadline and the last milestone's date when the POA&M is downloaded).
+
 The POA&M does not link to a System Security Plan: OSCAL makes that optional here.
-Deadlines and milestones are left out on purpose; only the people fixing the issues can set them.
-Rerunning regenerates the file, so edits made by hand (status, milestones) would be replaced.
+Rerunning regenerates the file, so edits made by hand (status, dates) would be replaced.
 """
 import argparse
 import sys
@@ -28,7 +32,7 @@ import uuid
 from pathlib import Path
 
 from trestle.oscal.assessment_results import AssessmentResults
-from trestle.oscal.common import AssociatedRisk, Link, Metadata, Property, Response
+from trestle.oscal.common import AssociatedRisk, Link, Metadata, Property, Response, Task
 from trestle.oscal.poam import PlanOfActionAndMilestones, PoamItem, RelatedFinding
 from trestle.oscal.poam import RelatedObservation as PoamRelatedObservation
 
@@ -40,6 +44,13 @@ HERE = Path(__file__).resolve().parent
 # obligation (from the catalog) -> POA&M priority. A missed SHALL / SHALL NOT is a hard requirement
 # failing; a missed SHOULD / SHOULD NOT is a recommendation. Adjust here if the team ranks them differently.
 PRIORITY = {"SHALL": "high", "SHALL NOT": "high", "SHOULD": "moderate", "SHOULD NOT": "moderate"}
+
+# The standard steps every fix goes through, in order: (title, description). No dates.
+MILESTONES = [
+    ("Plan the change", "Decide how to meet the requirement, using the remediation steps, and who applies it."),
+    ("Apply the change", "Make the configuration change in the tenant."),
+    ("Verify with a ScubaGear rescan", "Run ScubaGear again and confirm the control now passes."),
+]
 
 
 def default_results():
@@ -76,7 +87,10 @@ def build(results_path, catalog_path, out_dir="."):
         for u in risk_ids:
             rem = Response(
                 uuid=str(uuid.uuid5(NS, f"{ar_id}:remediation:{cid}")), lifecycle="recommendation",
-                title=f"Remediation for {ctl['label']}", description=ctl["remediation"])
+                title=f"Remediation for {ctl['label']}", description=ctl["remediation"],
+                tasks=[Task(uuid=str(uuid.uuid5(NS, f"{ar_id}:milestone:{cid}:{n}")), type="milestone",
+                            title=title, description=text)
+                       for n, (title, text) in enumerate(MILESTONES, 1)])
             used_risks.append(risks[u].model_copy(update={"remediations": [rem]}))
         findings.append(f)
 

@@ -20,6 +20,11 @@ assessment results, POA&M), each checked against the OSCAL 1.1.2 models (pipelin
 with the chain of uuids from one catalog control to its POA&M item. A person can attest the result
 of a control ScubaGear could not check; the attestation is added to the downloaded assessment
 results as an OSCAL observation (method EXAMINE or INTERVIEW). The scan's own statuses never change.
+
+Fix first is ordered by a transparent score (app/fix_first.py, weights in config/fix_first.toml).
+The Changes tab compares this scan with an earlier one's OSCAL assessment results (app/compare_scans.py):
+resolved, regressed and new failures, and proposed POA&M closures that a person confirms. The Report
+tab builds a complete, executive, auditor or engineer PDF.
 """
 import html
 import importlib.util
@@ -47,11 +52,14 @@ sys.path[:0] = [str(ROOT), str(HERE)]
 from ai import assistant as ai_assistant  # noqa: E402
 from ai.assistant import ENV_VARS, Assistant  # noqa: E402
 from ai.findings import prioritized_failures  # noqa: E402
-from report_pdf import build_pdf  # noqa: E402
+from fix_first import families, fix_first, load_config  # noqa: E402
+from poam_dates import poam_plan, poam_with_dates  # noqa: E402
+from report_pdf import AUDIENCES, build_pdf  # noqa: E402
 
 sys.path[:0] = [str(ROOT / "pipeline"), str(ROOT / "comparison")]
 from compare_oscal import product_name  # noqa: E402
 from validate_oscal import validate  # noqa: E402
+import compare_scans  # noqa: E402  (needs pipeline/ on the path)
 
 log = logging.getLogger(__name__)
 
@@ -67,6 +75,7 @@ PRIORITY_BADGE = {"high": ("Required (SHALL)", "red"), "moderate": ("Recommended
 
 TAB_OVERVIEW = "Overview"
 TAB_FINDINGS = "Findings"
+TAB_CHANGES = "Changes"
 TAB_CHAT = "Questions"
 TAB_REPORT = "Report"
 TAB_OSCAL = "OSCAL"
@@ -128,11 +137,15 @@ div:has(> .st-key-chat_log) { height: max(220px, calc(100vh - 340px)) !important
 .scb-dl dd span { color: #5F6B7A; }
 </style>"""
 
-EXAMPLE_QUESTIONS = [
-    "What should we fix first, and why?",
-    "What is our biggest identity risk right now?",
-    "How are we doing on privileged access?",
-]
+PERSONA_QUESTIONS = {   # starter questions for each kind of reader
+    "Engineer": ["What should I fix first, and how?",
+                 "Give me the fix steps for our Required failures in Microsoft Entra ID."],
+    "Auditor": ["Which failed controls map to NIST SP 800-53 AC controls? Cite each control.",
+                "What evidence supports each failed Required control?"],
+    "Leader": ["How exposed are we, in plain terms?",
+               "Which products need the most attention, and why?"],
+}
+CHANGES_QUESTION = "What changed since the last scan, and what regressed?"
 NOTE_REQUEST = (
     "Write a short analyst note on the failed control `{control_id}` for this tenant, in at most 120 words: "
     "why this failure matters (as analysis, not fact) and how to approach the fix, in priority order. Do not "
@@ -165,6 +178,8 @@ SCAN_FILE = "scuba-results.json"   # the uploaded file's name in the OSCAL bundl
 ATTEST_NS = uuid.UUID("6f1c2d3e-0000-4000-8000-5c0ba0000003")   # uuid5 namespace for attestations
 ATTEST_METHODS = {"EXAMINE": "Examined the setting", "INTERVIEW": "Interviewed the administrator"}
 AI_HEALTH_TTL = 300    # seconds before the AI connection is checked again
+REPORT_FILE_KIND = {"complete": "compliance-report", "executive": "executive-report", "auditor": "audit-report",
+                    "engineer": "remediation-report"}
 
 
 # --- AI -----------------------------------------------------------------------
@@ -358,6 +373,10 @@ def reset_for_new_data():
     st.session_state.report = None
     st.session_state.report_error = None
     st.session_state.attestations = {}
+    st.session_state.previous = None     # an earlier scan's results, for the Changes tab
+    st.session_state.closures = {}       # control id -> confirmed POA&M closure
+    st.session_state.previous_error = None
+    st.session_state.target_dates = {}   # control id -> target date for its POA&M item, set by a person
 
 
 def load_scan(name, raw):
@@ -401,7 +420,7 @@ def format_time(iso):
         return iso or "unknown"
 
 
-def generate_report(assistant, use_ai=True):
+def generate_report(assistant, use_ai=True, audience="complete"):
     """Have the AI write the analysis (unless use_ai is False), then build the PDF. Without the AI the
     PDF holds the verified results and the SCuBA guidance only. Keeps the result, or the error, in session state."""
     st.session_state.report_requested = False
@@ -416,22 +435,24 @@ def generate_report(assistant, use_ai=True):
             return
     try:
         generated = datetime.now(timezone.utc)
-        pdf = build_pdf(reply, assistant.findings, assistant.info, assistant.summary, generated)
+        pdf = build_pdf(reply, assistant.findings, assistant.info, assistant.summary, generated, audience,
+                        plan=plan_rows())
     except Exception:
         log.exception("Could not build the report PDF")
         st.session_state.report_error = "The AI wrote the report, but the PDF could not be built. Try again."
         return
-    st.session_state.report = {"pdf": pdf, "generated": generated, "ai": reply is not None,
-                               "file_name": report_file_name(assistant.info.get("tenant"), generated)}
+    st.session_state.report = {"pdf": pdf, "generated": generated, "ai": reply is not None, "audience": audience,
+                               "file_name": report_file_name(assistant.info.get("tenant"), generated, audience)}
 
 
-def report_file_name(tenant, generated):
-    """<tenant>-scuba-compliance-report-<YYYY-MM-DD>-<HHMMSS>.pdf, time in UTC.
+def report_file_name(tenant, generated, audience="complete"):
+    """<tenant>-scuba-compliance-report-<YYYY-MM-DD>-<HHMMSS>.pdf, time in UTC; the other audiences say
+    executive-report, audit-report or remediation-report instead.
 
     The tenant name comes from the uploaded scan, so anything a file name can't hold (spaces,
     slashes, colons...) becomes a hyphen. The time has no colons, which Windows file names forbid."""
     safe = re.sub(r"[^A-Za-z0-9._-]+", "-", tenant or "").strip("-.") or "tenant"
-    return f"{safe}-scuba-compliance-report-{generated:%Y-%m-%d}-{generated:%H%M%S}.pdf"
+    return f"{safe}-scuba-{REPORT_FILE_KIND[audience]}-{generated:%Y-%m-%d}-{generated:%H%M%S}.pdf"
 
 
 # --- OSCAL files and attestations ------------------------------------------------
@@ -463,12 +484,80 @@ def assessment_results_with_attestations(doc, attestations):
     return doc
 
 
+def plan_rows():
+    """The POA&M as rows for the PDF: control, priority, milestones, target date."""
+    return [[f.control_id, {"high": "Required", "moderate": "Recommended"}.get(f.priority, "-"),
+             "; ".join(f"{n}. {m}" for n, m in enumerate(plan[f.control_id]["milestones"], 1)),
+             f"{t:%d %b %Y}" if (t := st.session_state.target_dates.get(f.control_id)) else "Not set"]
+            for f in failures if f.control_id in plan]
+
+
+def poam_caption(f):
+    item = plan.get(f.control_id)
+    if not item:
+        return
+    target = st.session_state.target_dates.get(f.control_id)
+    steps = ", ".join(f"{n}) {m}" for n, m in enumerate(item["milestones"], 1))
+    st.caption(f"**Plan of action:** POA&M item `{item['item_uuid']}`. Milestones: {steps}. Target date: "
+               + (f"{target:%d %b %Y}" if target else "not set (set it in Findings, under Plan of action)") + ".")
+
+
+def render_plan_of_action():
+    """Every POA&M item with its milestones; the team sets a target date for each."""
+    st.subheader("Plan of action (POA&M)", anchor=False)
+    steps = next((item["milestones"] for item in plan.values() if item["milestones"]), [])
+    st.caption("One item per failed control. Every item has the same milestones: "
+               + ", ".join(f"{n}) {m}" for n, m in enumerate(steps, 1))
+               + ". Set a target date for an item and it is added to the downloaded POA&M as the item's deadline.")
+    targets = st.session_state.target_dates
+    rows = [{"Control": f.control_id, "Product": f.product, "Title": f.title,
+             "Priority": {"high": "Required", "moderate": "Recommended"}.get(f.priority, ""),
+             "Target date": targets.get(f.control_id), "POA&M item": plan[f.control_id]["item_uuid"]}
+            for f in failures if f.control_id in plan]
+    if not rows:
+        st.caption("No POA&M: every assessed control passed.")
+        return
+    edited = st.data_editor(
+        pd.DataFrame(rows), hide_index=True, key="poam_editor", disabled=[k for k in rows[0] if k != "Target date"],
+        column_config={"Control": st.column_config.TextColumn(width=150),
+                       "Title": st.column_config.TextColumn(width="large"),
+                       "Target date": st.column_config.DateColumn(min_value=date.today(), format="D MMM YYYY",
+                                                                  help="Double-click to set"),
+                       "POA&M item": st.column_config.TextColumn(width="medium")})
+    for cid, target in zip(edited["Control"], edited["Target date"]):
+        if pd.notna(target):
+            targets[cid] = pd.Timestamp(target).date()
+        else:
+            targets.pop(cid, None)
+    set_count = sum(cid in targets for cid in edited["Control"])
+    st.caption(f"{set_count} of {len(rows)} items have a target date.")
+
+
 def oscal_documents():
-    """{file name: document} for this scan, attestations included."""
+    """{file name: document} for this scan: attestations, confirmed POA&M closures and the Fix first scores
+    (as risk props) included."""
     docs = dict(st.session_state.upload.get("oscal") or {})
     if "assessment-results.json" in docs:
-        docs["assessment-results.json"] = assessment_results_with_attestations(
-            docs["assessment-results.json"], st.session_state.attestations)
+        doc = assessment_results_with_attestations(docs["assessment-results.json"], st.session_state.attestations)
+        doc = json.loads(json.dumps(doc))
+        result = doc["assessment-results"]["results"][0]
+        by_risk = {f.risk_uuid: f for f in failures if f.risk_uuid}
+        for risk in result.get("risks", []):
+            f = by_risk.get(risk["uuid"])
+            if f:
+                sc = scores[f.control_id]
+                risk.setdefault("props", []).extend([
+                    {"name": "fix-first-score", "value": str(sc.points), "ns": "https://scuba.example/ns"},
+                    {"name": "fix-first-reason", "value": sc.reason, "ns": "https://scuba.example/ns"}])
+        previous = st.session_state.previous
+        for cid, closure in sorted(st.session_state.closures.items()):
+            f = next((x for x in findings if x.control_id == cid), None)
+            if f and previous:
+                result.setdefault("observations", []).append(compare_scans.closing_observation(
+                    f, previous, closure, doc["assessment-results"]["uuid"]))
+        docs["assessment-results.json"] = doc
+    if "poam.json" in docs:
+        docs["poam.json"] = poam_with_dates(docs["poam.json"], st.session_state.target_dates)
     return docs
 
 
@@ -593,6 +682,8 @@ def render_oscal_tab():
             st.caption(f"{what}. {c['title'] or ''}, version {c['version'] or '?'}, generated "
                        f"{format_time(body.get('metadata', {}).get('last-modified'))}.")
             st.markdown(f"UUID `{c['uuid'] or ''}`")
+            if name == "poam.json" and st.session_state.target_dates:
+                st.caption(f"Includes {len(st.session_state.target_dates)} target date(s) set by your team.")
             if name == "assessment-results.json" and st.session_state.attestations:
                 st.caption(f"Includes {len(st.session_state.attestations)} manual attestation(s) as observations.")
             if not c["valid"]:
@@ -612,6 +703,120 @@ def render_oscal_tab():
                      hide_index=True, column_config={"OSCAL file": st.column_config.TextColumn(width=170),
                                                      "Record": st.column_config.TextColumn(width=210),
                                                      "UUID or id": st.column_config.TextColumn(width="large")})
+
+
+# --- Changes since an earlier scan ------------------------------------------------
+def load_previous(uploaded):
+    if uploaded is None or uploaded.file_id == st.session_state.get("previous_file_id"):
+        return
+    st.session_state.previous_file_id = uploaded.file_id
+    st.session_state.closures = {}
+    try:
+        doc = json.loads(uploaded.getvalue().decode("utf-8-sig"))
+        st.session_state.previous = compare_scans.read_previous(doc)
+        st.session_state.previous_error = None
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        st.session_state.previous, st.session_state.previous_error = None, "That file is not valid JSON."
+    except compare_scans.ComparisonError as exc:
+        st.session_state.previous, st.session_state.previous_error = None, str(exc)
+
+
+def current_tenant_id():
+    ar = (st.session_state.upload.get("oscal") or {}).get("assessment-results.json", {}).get("assessment-results", {})
+    return compare_scans.props((ar.get("results") or [{}])[0].get("props")).get("tenant-id")
+
+
+def confirm_closure(control_id):
+    by = (st.session_state.get("closure_by") or "").strip() or "Reviewer"
+    st.session_state.closures[control_id] = {"by": by, "at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+
+
+def undo_closure(control_id):
+    st.session_state.closures.pop(control_id, None)
+
+
+def clear_previous():
+    st.session_state.previous = None
+    st.session_state.closures = {}
+    st.session_state.previous_error = None
+
+
+def changes_facts(previous, changed):
+    """What the AI is told about the comparison: control ids per kind, from code."""
+    return {"previous_scan_time": previous["scan_time"],
+            **{kind: [f.control_id for f in changed[kind]] for kind in ("resolved", "regressed", "new")},
+            "still_failing": len(changed["still failing"])}
+
+
+def render_changes_tab():
+    st.caption("Compare this scan with an earlier scan of the same tenant: upload the earlier scan's "
+               "**assessment-results.json** (from its OSCAL tab). Matching is by control; nothing is stored.")
+    uploaded = st.file_uploader("Earlier assessment results", type=["json"], key="previous_upload",
+                                max_upload_size=MAX_UPLOAD_MB, label_visibility="collapsed")
+    load_previous(uploaded)
+    if st.session_state.previous_error:
+        st.error(st.session_state.previous_error, icon=":material/block:")
+    previous = st.session_state.previous
+    if not previous:
+        assistant.info.pop("changes_since_previous_scan", None)
+        return
+    for w in compare_scans.warnings(previous, current_tenant_id(), info.get("scan_time")):
+        st.warning(w, icon=":material/warning:")
+    changed = compare_scans.compare(previous, findings)
+    assistant.info["changes_since_previous_scan"] = changes_facts(previous, changed)
+
+    before = compare_scans.counts(previous["results"])
+    now_pass, now_fail = summary["passed"], summary["failed"]
+    st.html(f'<p class="scb-verdict">Since {html.escape(format_time(previous["scan_time"]))}: '
+            f'{len(changed["resolved"])} resolved, {len(changed["regressed"])} regressed, '
+            f'{len(changed["new"])} new failures.</p>')
+    with st.container(horizontal=True):
+        st.metric("Passing controls", now_pass, delta=now_pass - before["PASS"], border=True)
+        st.metric("Failing controls", now_fail, delta=now_fail - before["FAIL"], delta_color="inverse", border=True)
+        st.metric("Still failing", len(changed["still failing"]), border=True)
+    for kind, title, explain in (("regressed", "Regressed", "passed in the earlier scan, fail now"),
+                                 ("new", "New failures", "not checked in the earlier scan, fail now"),
+                                 ("resolved", "Resolved", "failed in the earlier scan, pass now")):
+        if changed[kind]:
+            st.markdown(f"**{title} ({len(changed[kind])})**: {explain}")
+            for f in changed[kind]:
+                worklist_row(f, f"changes_{kind.replace(' ', '_')}") if f.status == "FAIL" else \
+                    st.markdown(f"- `{f.control_id}` {f.title}")
+
+    if changed["resolved"]:
+        st.subheader("Proposed POA&M closures", anchor=False)
+        st.caption("Each resolved control's item in the earlier POA&M can be closed. Confirm each one; the closure is "
+                   "added to this scan's OSCAL assessment results as an observation.")
+        st.text_input("Confirmed by", key="closure_by", placeholder="Name and role", width=320)
+        for f in changed["resolved"]:
+            item = compare_scans.previous_poam_item(previous, f)
+            with st.container(horizontal=True, vertical_alignment="center"):
+                st.markdown(f"`{f.control_id}` {f.title}  \n:gray[POA&M item {item}]", width="stretch")
+                done = st.session_state.closures.get(f.control_id)
+                if done:
+                    st.badge(f"Closed by {done['by']}", color="green", icon=":material/check:")
+                    st.button("Undo", key=f"undo_{safe_key(f.control_id)}", type="tertiary", on_click=undo_closure,
+                              args=(f.control_id,))
+                else:
+                    st.button("Confirm closure", key=f"close_{safe_key(f.control_id)}", on_click=confirm_closure,
+                              args=(f.control_id,))
+    st.button("Remove the earlier scan", type="tertiary", on_click=clear_previous)
+
+
+def data_handling_panel():
+    """What happens to the scan: facts from how the app works, plus hosting details the deployer states in .env."""
+    with st.expander("How your data is handled"):
+        hosting = os.environ.get("AZURE_OPENAI_HOSTING")
+        retention = os.environ.get("AZURE_OPENAI_DATA_RETENTION")
+        st.markdown(
+            "- **Stored:** nothing. The scan is processed in memory for this browser session and is gone when "
+            "the page is refreshed.\n"
+            "- **Sent to the AI:** only when you ask a question, write an analyst note or build a report with AI "
+            "analysis: each control's result, requirement, scan details and evidence text, plus the tenant's "
+            "display name, domain and scan date. The tenant id and the raw scan file are not sent.\n"
+            "- **The AI cannot** change a status, write a file or act on the tenant.\n"
+            f"- **AI hosting:** {hosting or 'not stated (set AZURE_OPENAI_HOSTING in .env)'}\n"
+            f"- **AI data retention:** {retention or 'not stated (set AZURE_OPENAI_DATA_RETENTION in .env)'}")
 
 
 # --- Rendering ----------------------------------------------------------------
@@ -743,6 +948,8 @@ def control_facts(f, key_prefix):
             st.caption("Related NIST SP 800-53 controls: " + ", ".join(n.replace("NIST SP 800-53 Rev 5 ", "")
                                                                      for n in f.nist))
         oscal_ids_caption(f)
+        if f.status == "FAIL":
+            poam_caption(f)
         if f.status == "NOT ASSESSED" and key_prefix == "dialog":
             attest_panel(f)
     if margin is not None:
@@ -798,6 +1005,32 @@ def worklist_row(f, key_prefix):
         control_facts(f, key_prefix)
 
 
+def fix_first_item(item, rank):
+    """One Fix first entry: a control, or controls one change fixes together, with why it ranks here."""
+    names = ", ".join(f.control_id for f in item.findings)
+    if item.name:
+        st.markdown(f"**{rank}. {item.name}**: one change fixes {len(item.findings)} controls ({names})")
+    else:
+        st.markdown(f"**{rank}.** Score {item.score.points}: {item.score.reason}")
+    if item.name:
+        st.caption(f"Score {item.score.points}: {item.score.reason}")
+    for f in item.findings:
+        worklist_row(f, f"overview{rank}")
+
+
+def fix_first_explainer(cfg):
+    with st.popover("How is this ordered?", type="tertiary"):
+        st.markdown("Each failed control gets points; the highest total comes first. The weights are the team's "
+                    "draft judgement calls, kept in `config/fix_first.toml`.")
+        st.markdown("- **Obligation:** Required (SHALL) " + str(cfg["obligation"]["SHALL"]) + ", Recommended (SHOULD) "
+                    + str(cfg["obligation"]["SHOULD"]) + "\n"
+                    + "".join(f"- **{e['label'].capitalize()}:** {e['points']}\n" for e in cfg.get("exposure", []))
+                    + "- **NIST SP 800-53 family:** " + ", ".join(f"{k} {v}" for k, v in cfg.get("family", {}).items())
+                    + "\n- **Effort:** quick fix " + str(cfg["effort"]["points"]["quick"]) + ", project "
+                    + str(cfg["effort"]["points"]["project"]) + f" ({len(cfg['effort'].get('controls', {}))} controls rated so far)")
+        st.caption("Controls that one change fixes (for example phishing-resistant MFA) are shown together.")
+
+
 def render_exchange(question, answer, index):
     """One question and its answer in the Q&A record, with the controls it cites listed underneath."""
     render_question(question, index)
@@ -851,6 +1084,12 @@ if "upload" not in st.session_state:
     st.session_state.upload_file_id = None
     st.session_state.load_sample = False
     st.session_state.flash = None              # toast to show after switching to the dashboard
+if "previous" not in st.session_state:
+    st.session_state.previous = None           # an earlier scan's results, for the Changes tab
+    st.session_state.closures = {}
+    st.session_state.previous_error = None
+if "target_dates" not in st.session_state:
+    st.session_state.target_dates = {}         # control id -> target date for its POA&M item
 if "attestations" not in st.session_state:
     st.session_state.attestations = {}         # control id -> manual check of a not-assessed control
     st.session_state.attest_error = None
@@ -961,6 +1200,10 @@ high_priority = [f for f in failures if f.priority == "high"]
 unassessed = [f for f in findings if f.status == "NOT ASSESSED"]
 results_by_id = st.session_state.upload.get("scan_results", {})
 products = info.get("products") or list(dict.fromkeys(f.product for f in findings))
+plan = poam_plan((st.session_state.upload.get("oscal") or {}).get("poam.json"))
+fix_cfg = load_config()
+fix_items, scores = fix_first(failures, fix_cfg)
+missing_from_scan = [f for f in unassessed if f.control_id not in results_by_id]
 skipped_products = st.session_state.upload.get("skipped_products") or []
 age = scan_age_days(info.get("scan_time"))
 scanned = format_time(info.get("scan_time"))
@@ -980,6 +1223,8 @@ with st.sidebar:
             f"<dt>File</dt><dd>{html.escape(st.session_state.upload['name'])}</dd></dl>")
     st.space("small")
     st.button("Upload a different scan", width="stretch", on_click=clear_scan)
+    st.space("small")
+    data_handling_panel()
 
 def scan_context():
     """What was scanned, what was left out, and whether the scan is old: shown under the Overview headline."""
@@ -989,6 +1234,10 @@ def scan_context():
     if skipped_products:
         st.caption(f"Not in this scan, so left out: {', '.join(skipped_products)}. Run ScubaGear with those products "
                    "to include them.")
+    if missing_from_scan:
+        st.warning(f"**ScubaGear {info.get('tool_version') or ''} is older than the baselines.** It has no check for "
+                   f"{len(missing_from_scan)} newer policies, which show as not assessed. Update ScubaGear to check "
+                   "them.", icon=":material/update:")
     if age is not None and age > STALE_SCAN_DAYS:
         st.warning(f"**This scan is {age} days old.** The tenant's settings may have changed since; re-run "
                    "ScubaGear for an up-to-date picture.", icon=":material/history:")
@@ -997,8 +1246,8 @@ def scan_context():
 # The tenant is the subject of the page, so it is the title.
 st.title(info.get("domain") or info.get("tenant") or "Your tenant", anchor=False)   # AI status is in the sidebar
 
-tab_overview, tab_findings, tab_chat, tab_report, tab_oscal = st.tabs(
-    [TAB_OVERVIEW, TAB_FINDINGS, TAB_CHAT, TAB_REPORT, TAB_OSCAL], key="tab", on_change="rerun")
+tab_overview, tab_findings, tab_changes, tab_chat, tab_report, tab_oscal = st.tabs(
+    [TAB_OVERVIEW, TAB_FINDINGS, TAB_CHANGES, TAB_CHAT, TAB_REPORT, TAB_OSCAL], key="tab", on_change="rerun")
 
 # Overview: the verdict, the whole baseline at a glance, and what to fix first
 with tab_overview:
@@ -1029,13 +1278,15 @@ with tab_overview:
     baseline_map(findings)
     st.caption("Select a policy to see its requirement, what the scan found and how to fix it.")
 
-    st.subheader("Fix first", anchor=False)
+    with st.container(horizontal=True, vertical_alignment="bottom"):
+        st.subheader("Fix first", anchor=False, width="content")
+        if failures:
+            fix_first_explainer(fix_cfg)
     if failures:
-        top = high_priority or failures
-        st.caption("Required (SHALL) controls that the scan found not met come first."
-                   if high_priority else "No Required (SHALL) control failed; these Recommended (SHOULD) controls did.")
-        for f in top[:FIX_FIRST]:
-            worklist_row(f, "overview")
+        st.caption("Ranked by a score that weighs the obligation, what the control protects, its NIST SP 800-53 "
+                   "family and the effort to fix.")
+        for rank, item in enumerate(fix_items[:FIX_FIRST], 1):
+            fix_first_item(item, rank)
         st.button(f"See all {len(failures)} findings", type="tertiary", on_click=goto, args=(TAB_FINDINGS,))
     else:
         st.success("Every assessed control passed.", icon=":material/verified:")
@@ -1057,7 +1308,7 @@ with tab_overview:
                            if f.control_id in attested else "")}
              for f, why in zip(unassessed, reasons)],
             hide_index=True,
-            column_config={"Control": st.column_config.TextColumn(width=115),
+            column_config={"Control": st.column_config.TextColumn(width=165),
                            "Title": st.column_config.TextColumn(width="medium"),
                            "Obligation": st.column_config.TextColumn(width=95),
                            "Why": st.column_config.TextColumn(width="large"),
@@ -1078,9 +1329,14 @@ with tab_findings:
             in_product = [f for f in failures if product == "All products" or f.product == product]
             area = st.selectbox("Area", ["All areas", *sorted({f.group for f in in_product})], key="filter_area",
                                 width=320)
+            family = st.selectbox("NIST SP 800-53 family", ["All families", *sorted({x for f in in_product
+                                                                                    for x in families(f)})],
+                                  key="filter_family", width=200)
         wanted = {"Required": "high", "Recommended": "moderate"}.get(priority)
         shown = [f for f in in_product if wanted is None or f.priority == wanted]
         shown = [f for f in shown if area == "All areas" or f.group == area]
+        shown = [f for f in shown if family == "All families" or family in families(f)]
+        shown.sort(key=lambda f: -scores[f.control_id].points)   # Fix first order within each obligation
         st.caption(f"Showing {len(shown)} of {len(failures)} failed controls. Open one to see what the scan found "
                    "and how to fix it.")
         for level, title, explain in (("high", "Required (SHALL)", "failed SHALL and SHALL NOT requirements"),
@@ -1090,6 +1346,9 @@ with tab_findings:
                 st.markdown(f"**{title} ({len(group)})**: {explain}")
                 for f in group:
                     worklist_row(f, "findings")
+
+    if failures:
+        render_plan_of_action()
 
     st.subheader("All controls", anchor=False)
     with st.container(horizontal=True, vertical_alignment="bottom", gap="medium"):
@@ -1102,7 +1361,18 @@ with tab_findings:
     q = (query or "").strip().lower()
     rows = [r for r in rows if (not q or q in f"{r['Control']} {r['Product']} {r['Title']} {r['Area']}".lower())
             and (not picked or r["Status"] in picked)]
-    st.caption(f"Showing {len(rows)} of {len(findings)} controls.")
+    with st.container(horizontal=True, vertical_alignment="center"):
+        st.caption(f"Showing {len(rows)} of {len(findings)} controls.", width="stretch")
+        by_id = {f.control_id: f for f in findings}
+        export = pd.DataFrame([{**r, "Requirement": by_id[r["Control"]].requirement,
+                                "Scan result": by_id[r["Control"]].finding,
+                                "NIST SP 800-53": "; ".join(n.replace("NIST SP 800-53 Rev 5 ", "")
+                                                           for n in by_id[r["Control"]].nist),
+                                "Fix first score": scores[r["Control"]].points if r["Control"] in scores else "",
+                                "OSCAL finding": by_id[r["Control"]].finding_uuid} for r in rows])
+        st.download_button("Export CSV", data=export.to_csv(index=False).encode("utf-8"), file_name=(
+            f"{re.sub(r'[^A-Za-z0-9._-]+', '-', info.get('tenant') or 'tenant')}-scuba-controls.csv"),
+            mime="text/csv", icon=":material/download:", type="tertiary", on_click="ignore", disabled=not rows)
     if rows:
         st.dataframe(styled_status(rows), hide_index=True,
                      column_config={"Control": st.column_config.TextColumn(width=140),
@@ -1111,6 +1381,9 @@ with tab_findings:
                                     "Area": st.column_config.TextColumn(width="medium"),
                                     "Obligation": st.column_config.TextColumn(width=95),
                                     "Status": st.column_config.TextColumn(width=110)})
+
+with tab_changes:
+    render_changes_tab()
 
 # Questions: the conversation in a scrolling box, oldest first, with the question box underneath
 with tab_chat:
@@ -1131,10 +1404,16 @@ with tab_chat:
     exchanges = [(msgs[i]["content"], msgs[i + 1] if i + 1 < len(msgs) else None) for i in range(0, len(msgs), 2)]
     with conversation:
         if not exchanges and not request:
-            st.markdown("Ask anything about this scan. For example:")
-            for q in EXAMPLE_QUESTIONS:
-                st.button(q, key=f"example_{q}", type="tertiary", disabled=bool(problem), on_click=queue,
-                          args=("chat", q))
+            st.markdown("Ask anything about this scan. To start:")
+            for column, (role, questions) in zip(st.columns(len(PERSONA_QUESTIONS)), PERSONA_QUESTIONS.items()):
+                with column:
+                    st.markdown(f"**{role}**")
+                    for q in questions:
+                        st.button(q, key=f"example_{q}", type="tertiary", disabled=bool(problem), on_click=queue,
+                                  args=("chat", q))
+            if st.session_state.previous:
+                st.button(CHANGES_QUESTION, key="example_changes", type="tertiary", disabled=bool(problem),
+                          on_click=queue, args=("chat", CHANGES_QUESTION))
         for n, (question, answer) in enumerate(exchanges):
             render_exchange(question, answer, n)
         if request:   # show the question at once, then the answer under it when it arrives
@@ -1155,14 +1434,12 @@ with tab_chat:
 
 # Report: the AI-written PDF
 with tab_report:
-    st.subheader("Compliance report", anchor=False)
-    st.markdown("A PDF for security and compliance stakeholders, built from this scan:")
-    st.markdown(
-        "- **Cover:** tenant, scan details and the pass and fail counts\n"
-        "- **Executive summary** and **recommended next steps** (AI analysis)\n"
-        "- **Findings:** one card per failed control with the verified requirement and scan result, plus the "
-        "AI's explanation and fix steps\n"
-        "- **Controls that passed**, **not assessed**, and an **appendix** of every control (verified results)")
+    st.subheader("Report", anchor=False)
+    audience = st.segmented_control(
+        "Report for", list(AUDIENCES), format_func=lambda a: {"complete": "Complete", "executive": "Executive",
+                                                               "auditor": "Auditor", "engineer": "Engineer"}[a],
+        default="complete", required=True, key="report_audience")
+    st.caption(AUDIENCES[audience][1] + ".")
     report_slot = st.container()   # filled at the end of the script, so the page renders before the slow AI call
 
 with tab_oscal:
@@ -1171,7 +1448,7 @@ with tab_oscal:
 with report_slot:
     if st.session_state.report_requested:
         with st.spinner("Building the report…" if problem else "The AI is writing the report. This can take a minute…"):
-            generate_report(assistant, use_ai=not problem)
+            generate_report(assistant, use_ai=not problem and audience != "auditor", audience=audience)
     report = st.session_state.report
     if report:
         st.download_button("Download PDF", data=report["pdf"], file_name=report["file_name"],
@@ -1181,7 +1458,11 @@ with report_slot:
                       else "Verified results and SCuBA guidance only, no AI analysis."))
     if st.session_state.report_error:
         st.error(st.session_state.report_error, icon=":material/error:")
-    if problem:
+    if report and report.get("audience") != audience:
+        st.caption("The report above is a different version; generate this one to replace it.")
+    if audience == "auditor":
+        st.caption("The audit report never uses the AI.")
+    elif problem:
         st.caption("The AI is off, so the report will hold the verified results and the SCuBA guidance only.")
     st.button("Regenerate report" if report else "Generate PDF report",
               type="secondary" if report else "primary", on_click=request_report,

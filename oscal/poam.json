@@ -3,7 +3,7 @@
     "uuid": "098f2bd9-b23b-56d3-9a00-648b23fd5c72",
     "metadata": {
       "title": "SCuBA Plan of Action and Milestones: CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline",
-      "last-modified": "2026-09-25T21:48:04+00:00",
+      "last-modified": "2026-09-25T22:52:37+00:00",
       "version": "0.1.0",
       "oscal-version": "1.1.2",
       "links": [
@@ -174,7 +174,27 @@
             "uuid": "f2a4b072-81ed-5b16-a014-afefdf7bfbbf",
             "lifecycle": "recommendation",
             "title": "Remediation for MS.AAD.3.8v1",
-            "description": "1. Create a conditional access policy requiring a user to be on a managed device when registering for MFA. Configure the following policy settings in the new conditional access policy, per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > User actions > <b>Register security information</b>\n\n  Access controls > Grant > Grant Access > <b>Require device to be marked as compliant</b> and <b>Require Microsoft Entra ID hybrid joined device</b> > For multiple controls > <b>Require one of the selected controls</b>\n</pre>"
+            "description": "1. Create a conditional access policy requiring a user to be on a managed device when registering for MFA. Configure the following policy settings in the new conditional access policy, per the values below:\n\n<pre>\n  Users > Include > <b>All users</b>\n\n  Target resources > User actions > <b>Register security information</b>\n\n  Access controls > Grant > Grant Access > <b>Require device to be marked as compliant</b> and <b>Require Microsoft Entra ID hybrid joined device</b> > For multiple controls > <b>Require one of the selected controls</b>\n</pre>",
+            "tasks": [
+              {
+                "uuid": "c4e669d1-9fe2-57a3-91d6-130a37c68ecf",
+                "type": "milestone",
+                "title": "Plan the change",
+                "description": "Decide how to meet the requirement, using the remediation steps, and who applies it."
+              },
+              {
+                "uuid": "c23e2e7b-0b57-5ec4-97e6-66092fb3fffa",
+                "type": "milestone",
+                "title": "Apply the change",
+                "description": "Make the configuration change in the tenant."
+              },
+              {
+                "uuid": "135ef01a-3bb2-5163-a5f4-48552855f8d3",
+                "type": "milestone",
+                "title": "Verify with a ScubaGear rescan",
+                "description": "Run ScubaGear again and confirm the control now passes."
+              }
+            ]
           }
         ],
         "related-observations": [
@@ -194,7 +214,27 @@
             "uuid": "20e5739e-1e78-51e7-8e07-bf47a6b7d40e",
             "lifecycle": "recommendation",
             "title": "Remediation for MS.AAD.5.2v1",
-            "description": "There are a couple of configuration options to restrict user consent. Each option is described below, followed by its respective instructions.\n\n- **Option 1** - Most restrictive - Do not allow user consent for applications. An administrator is required to consent for all applications. Users can submit requests to use an application via the admin consent workflow but they cannot perform the consent themselves.\n- **Option 2** - More flexible - Allow users to consent to applications from Microsoft verified publishers that use low-risk permissions. When selecting this option, an administrator must configure a set of permissions considered low risk in the **Consent and permissions** > **Permission classifications** page in the Microsoft Entra admin center.\n\n**Option 1**. Do not allow user consent.\n\n1.  In **Microsoft Entra admin center** select **Enterprise Applications**.\n\n2. Under **Security**, select **Consent and permissions**. Then select **User Consent Settings**.\n\n3. Under **User consent for applications**, select **Do not allow user consent**.\n\n4. Click **Save**.\n\n**Option 2**. Allow restricted user consent.\n\n1.  In **Microsoft Entra admin center** select **Enterprise apps**.\n\n2. Under **Security**, select **Consent and permissions**. Then select **User Consent Settings**.\n\n3. Under **User consent for applications**, select **Allow user consent for apps from verified publishers, for selected permissions**.\n\n4. Click **Save**.\n\n5. In the page navigation menu, select **Permission classifications**.\n\n6. Click on the **Low** tab.\n\n7. [Add a list of low risk application permissions that users will be able to consent to](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-permission-classifications). We recommend only including permissions that provide minimal access to a user's data. For a reference of permissions that are considered risky and should be avoided [go to this JSON file and examine the permissions listed](https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/schemas/RiskyAppPermissions.json) in the **Delegated** sections under Microsoft Graph and other apps."
+            "description": "There are a couple of configuration options to restrict user consent. Each option is described below, followed by its respective instructions.\n\n- **Option 1** - Most restrictive - Do not allow user consent for applications. An administrator is required to consent for all applications. Users can submit requests to use an application via the admin consent workflow but they cannot perform the consent themselves.\n- **Option 2** - More flexible - Allow users to consent to applications from Microsoft verified publishers that use low-risk permissions. When selecting this option, an administrator must configure a set of permissions considered low risk in the **Consent and permissions** > **Permission classifications** page in the Microsoft Entra admin center.\n\n**Option 1**. Do not allow user consent.\n\n1.  In **Microsoft Entra admin center** select **Enterprise Applications**.\n\n2. Under **Security**, select **Consent and permissions**. Then select **User Consent Settings**.\n\n3. Under **User consent for applications**, select **Do not allow user consent**.\n\n4. Click **Save**.\n\n**Option 2**. Allow restricted user consent.\n\n1.  In **Microsoft Entra admin center** select **Enterprise apps**.\n\n2. Under **Security**, select **Consent and permissions**. Then select **User Consent Settings**.\n\n3. Under **User consent for applications**, select **Allow user consent for apps from verified publishers, for selected permissions**.\n\n4. Click **Save**.\n\n5. In the page navigation menu, select **Permission classifications**.\n\n6. Click on the **Low** tab.\n\n7. [Add a list of low risk application permissions that users will be able to consent to](https://learn.microsoft.com/en-us/entra/identity/enterprise-apps/configure-permission-classifications). We recommend only including permissions that provide minimal access to a user's data. For a reference of permissions that are considered risky and should be avoided [go to this JSON file and examine the permissions listed](https://github.com/cisagov/ScubaGear/blob/main/PowerShell/ScubaGear/schemas/RiskyAppPermissions.json) in the **Delegated** sections under Microsoft Graph and other apps.",
+            "tasks": [
+              {
+                "uuid": "8db9aee3-b80d-5c29-9b09-af8bcdab01ca",
+                "type": "milestone",
+                "title": "Plan the change",
+                "description": "Decide how to meet the requirement, using the remediation steps, and who applies it."
+              },
+              {
+                "uuid": "cced7dee-a195-5fe0-857d-638a65fe7c3d",
+                "type": "milestone",
+                "title": "Apply the change",
+                "description": "Make the configuration change in the tenant."
+              },
+              {
+                "uuid": "21603060-82fa-58a4-8451-a3c9c2f8cf4b",
+                "type": "milestone",
+                "title": "Verify with a ScubaGear rescan",
+                "description": "Run ScubaGear again and confirm the control now passes."
+              }
+            ]
           }
         ],
         "related-observations": [
@@ -214,7 +254,27 @@
             "uuid": "6baba7fa-379f-549c-bb8a-2414ff8ee054",
             "lifecycle": "recommendation",
             "title": "Remediation for MS.AAD.7.4v1",
-            "description": "1. In **Microsoft Entra admin center**  select **Roles and admins**. Perform the steps below for each highly privileged role. We reference the Global Administrator role as an example.\n\n2. Select the **Global Administrator** role.\n\n3. Under **Manage**, select **Assignments** and click the **Active assignments** tab.\n\n4. Verify there are no users or groups with a value of **Permanent** in the **End time** column. If there are any, recreate those assignments to have an expiration date using Microsoft Entra ID PIM or an alternative PAM system. If a group is identified and it is enrolled in PIM for Groups, see the exception cases below for details.\n\nException cases:\n- Emergency access accounts that require perpetual active assignment.\n- Service accounts that require perpetual active assignment.\n- If using PIM for Groups, a group that is enrolled in PIM is allowed to have a perpetual active assignment to a role because activation is handled by PIM for Groups."
+            "description": "1. In **Microsoft Entra admin center**  select **Roles and admins**. Perform the steps below for each highly privileged role. We reference the Global Administrator role as an example.\n\n2. Select the **Global Administrator** role.\n\n3. Under **Manage**, select **Assignments** and click the **Active assignments** tab.\n\n4. Verify there are no users or groups with a value of **Permanent** in the **End time** column. If there are any, recreate those assignments to have an expiration date using Microsoft Entra ID PIM or an alternative PAM system. If a group is identified and it is enrolled in PIM for Groups, see the exception cases below for details.\n\nException cases:\n- Emergency access accounts that require perpetual active assignment.\n- Service accounts that require perpetual active assignment.\n- If using PIM for Groups, a group that is enrolled in PIM is allowed to have a perpetual active assignment to a role because activation is handled by PIM for Groups.",
+            "tasks": [
+              {
+                "uuid": "a7a16418-f2f4-56fb-b364-9990daa38938",
+                "type": "milestone",
+                "title": "Plan the change",
+                "description": "Decide how to meet the requirement, using the remediation steps, and who applies it."
+              },
+              {
+                "uuid": "c20bfcdf-c48d-5b9c-8ee0-492e4882e483",
+                "type": "milestone",
+                "title": "Apply the change",
+                "description": "Make the configuration change in the tenant."
+              },
+              {
+                "uuid": "5d0ecf96-57d0-564b-8edb-d9a6ac7287bc",
+                "type": "milestone",
+                "title": "Verify with a ScubaGear rescan",
+                "description": "Run ScubaGear again and confirm the control now passes."
+              }
+            ]
           }
         ],
         "related-observations": [

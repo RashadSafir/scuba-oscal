@@ -18,6 +18,15 @@ in prose (Assistant.compliance_report returns it as structured data):
 If the AI's reply could not be read (reply["report"] is None) the report still has every fact
 section, and each finding shows the SCuBA remediation guidance instead of the AI's notes.
 
+Audiences (build_pdf's `audience`), each a subset of the complete report:
+  complete    everything above
+  executive   cover, executive summary, next steps, results by product, the Required failures
+  auditor     cover, scope, findings with evidence, NIST SP 800-53 and OSCAL uuids, the passed and
+              not-assessed lists and the appendix. No AI content: the app never asks the AI for it.
+  engineer    cover, next steps, and every finding with the full fix steps
+The complete, auditor and engineer reports end their findings with the plan of action (POA&M
+milestones and target dates) when the app passes it in.
+
 Uses fpdf2's built-in Helvetica, which only covers Latin-1, so the typographic characters models
 like to use (curly quotes, dashes, bullets) are swapped for plain ones first.
 """
@@ -46,6 +55,12 @@ WHITE = (255, 255, 255)
 
 BODY_PT, BODY_H = 10.5, 5.4           # body text size (pt) and line height (mm), about 1.45 spacing
 REMEDIATION_LIMIT = 700                # characters of SCuBA guidance shown when the AI's notes are missing
+AUDIENCES = {   # audience -> (report title, what it is for)
+    "complete": ("SCuBA compliance report", "Everything: summary, findings, fixes and every control"),
+    "executive": ("SCuBA executive report", "For leaders: posture, top risks, next steps"),
+    "auditor": ("SCuBA audit report", "For auditors: evidence, NIST SP 800-53 and OSCAL references, no AI content"),
+    "engineer": ("SCuBA remediation report", "For engineers: every failed control with its fix steps"),
+}
 
 REPLACEMENTS = {
     "‘": "'", "’": "'", "“": '"', "”": '"', "–": "-", "—": " - ",
@@ -216,10 +231,10 @@ def products_text(info):
     return ", ".join(info.get("products") or []) or "Microsoft 365"
 
 
-def _cover(pdf, info, summary, failures, generated_at):
+def _cover(pdf, info, summary, failures, generated_at, audience="complete"):
     pdf.set_font("helvetica", "B", 24)
     pdf.set_text_color(*NAVY)
-    pdf.cell(0, 12, "SCuBA compliance report", new_x="LMARGIN", new_y="NEXT")
+    pdf.cell(0, 12, AUDIENCES[audience][0], new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("helvetica", "", 12)
     pdf.set_text_color(*MUTED)
     pdf.multi_cell(0, 7, plain(f"{products_text(info)} against the CISA SCuBA baselines"), align="L",
@@ -265,9 +280,13 @@ def _cover(pdf, info, summary, failures, generated_at):
     pdf.tag(f"{moderate} Recommended (SHOULD)", AMBER, AMBER_BG)
     pdf.ln(10)
 
-    pdf.note("Sections marked AI analysis were written by an AI model from the verified results and are "
-             "analysis, not findings. Every status, requirement and scan result comes directly from the "
-             "ScubaGear scan; check the AI's notes against them before acting.")
+    if audience == "auditor":
+        pdf.note("This report contains no AI-generated content. Every status, requirement, scan result and "
+                 "reference comes directly from the ScubaGear scan and the OSCAL records built from it.")
+    else:
+        pdf.note("Sections marked AI analysis were written by an AI model from the verified results and are "
+                 "analysis, not findings. Every status, requirement and scan result comes directly from the "
+                 "ScubaGear scan; check the AI's notes against them before acting.")
 
 
 def _scope(pdf, info, summary):
@@ -283,8 +302,9 @@ def _scope(pdf, info, summary):
              "ScubaGear as a Warning) is Recommended. Controls ScubaGear did not evaluate are listed as not assessed.")
 
 
-def _card(pdf, f, analysis):
-    """One failed control. Facts first, then the AI's notes (or the SCuBA guidance if there are none)."""
+def _card(pdf, f, analysis, audience="complete"):
+    """One failed control. Facts first, then the AI's notes (or the SCuBA guidance if there are none).
+    The auditor version adds the evidence and references; the engineer version shows the guidance in full."""
     x0, y0, page0 = pdf.l_margin, pdf.get_y(), pdf.page
     inner_x, inner_w = x0 + 6, pdf.epw - 10
     label_w = 27
@@ -316,6 +336,13 @@ def _card(pdf, f, analysis):
 
     field("Requirement", f.requirement, serif=True)
     field("Scan result", f.finding or "No details recorded.")
+    if audience == "auditor":
+        if f.evidence:
+            field("Evidence", f.evidence, color=MUTED)
+        if f.nist:
+            field("NIST 800-53", ", ".join(n.replace("NIST SP 800-53 Rev 5 ", "") for n in f.nist), color=MUTED)
+        if f.observation_uuid:
+            field("OSCAL observation", f.observation_uuid, color=MUTED)
     if f.finding_uuid:
         field("OSCAL finding", f.finding_uuid, color=MUTED)
 
@@ -335,7 +362,7 @@ def _card(pdf, f, analysis):
     else:
         guidance = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", f.remediation)   # [text](url) -> text
         guidance = " ".join(re.sub(r"(?m)^\s*>\s?", "", guidance).split())   # drop "> " quote markers
-        if len(guidance) > REMEDIATION_LIMIT:
+        if audience != "engineer" and len(guidance) > REMEDIATION_LIMIT:
             guidance = guidance[:REMEDIATION_LIMIT].rsplit(" ", 1)[0] + " ... (see the SCuBA baseline for the full steps)"
         field("SCuBA guidance", guidance or "None recorded.")
 
@@ -348,7 +375,7 @@ def _card(pdf, f, analysis):
     pdf.set_y(y1 + 4)
 
 
-def _findings(pdf, failures, analyses):
+def _findings(pdf, failures, analyses, audience="complete"):
     pdf.section("Findings", keep=70)
     if not failures:
         pdf.para("No assessed control failed.")
@@ -365,10 +392,10 @@ def _findings(pdf, failures, analyses):
         pdf.subsection(title, len(group), color)
         for f in group:
             with pdf.offset_rendering() as dummy:   # keep each card on one page
-                _card(dummy, f, analyses.get(f.control_id))
+                _card(dummy, f, analyses.get(f.control_id), audience)
             if dummy.page_break_triggered:
                 pdf.add_page()
-            _card(pdf, f, analyses.get(f.control_id))
+            _card(pdf, f, analyses.get(f.control_id), audience)
 
 
 def _lists(pdf, findings):
@@ -408,20 +435,52 @@ def _appendix(pdf, findings):
                       ["Control", "Title", "Obligation", "Status", "Priority"], (26, 71, 24, 28, 21), style_status=True)
 
 
-def build_pdf(reply, findings, info, summary, generated_at=None):
+def _by_product(pdf, findings):
+    """Pass, fail and not-assessed counts per product."""
+    products = list(dict.fromkeys(f.product for f in findings))
+    pdf.section("Results by product", "facts", keep=45)
+    rows = []
+    for product in products:
+        fs = [f for f in findings if f.product == product]
+        rows.append([product or "-", len(fs), sum(f.status == "PASS" for f in fs), sum(f.status == "FAIL" for f in fs),
+                     sum(f.status == "NOT ASSESSED" for f in fs), sum(f.priority == "high" for f in fs)])
+    pdf.control_table(rows, ["Product", "Controls", "Pass", "Fail", "Not assessed", "Required failing"],
+                      (60, 20, 18, 18, 26, 28))
+
+
+def _required_failures(pdf, failures):
+    required = [f for f in failures if f.priority == "high"]
+    pdf.section("Required controls that failed", "facts", keep=45)
+    if not required:
+        pdf.para("No Required (SHALL) control failed.")
+        return
+    pdf.control_table([[f.control_id, f.product, f.title] for f in required],
+                      ["Control", "Product", "Title"], (32, 40, 98))
+
+
+def _plan(pdf, plan):
+    """The POA&M: each item's milestones and the target date the team set."""
+    pdf.section("Plan of action (POA&M)", "facts", keep=55)
+    pdf.para("One POA&M item per failed control, each with the same three milestones. Target dates are set by "
+             "the team, not by the scan or the AI.", size=9.5, color=MUTED, gap=3)
+    pdf.control_table(plan, ["Control", "Priority", "Milestones", "Target date"], (32, 26, 84, 28))
+
+
+def build_pdf(reply, findings, info, summary, generated_at=None, audience="complete", plan=None):
     """reply: the dict from Assistant.compliance_report(), or None to build the report without the AI
-    (verified results and SCuBA guidance only). Returns the PDF as bytes."""
+    (verified results and SCuBA guidance only). audience: see AUDIENCES. plan: POA&M rows
+    [control, priority, milestones, target date] for the plan of action section. Returns the PDF as bytes."""
     generated_at = generated_at or datetime.now(timezone.utc)
     offline = reply is None
     reply = reply or {"report": None, "unverified_references": []}
     report = reply.get("report")
     failures = sorted((f for f in findings if f.status == "FAIL"), key=lambda f: f.priority != "high")
-    pdf = ReportPDF(plain(f"SCuBA compliance report  |  {info.get('tenant') or ''}  |  "
+    pdf = ReportPDF(plain(f"{AUDIENCES[audience][0]}  |  {info.get('tenant') or ''}  |  "
                           f"{generated_at.strftime('%d %B %Y')}"))
     pdf.add_page()
-    _cover(pdf, info, summary, failures, generated_at)
+    _cover(pdf, info, summary, failures, generated_at, audience)
 
-    if offline:
+    if offline and audience != "auditor":   # the audit report never has AI content
         pdf.note("Built without the AI: this report shows the verified results and the SCuBA baseline's own "
                  "guidance only. It contains no AI analysis.", color=ACCENT, fill=PANEL)
     elif report is None:
@@ -430,15 +489,25 @@ def build_pdf(reply, findings, info, summary, generated_at=None):
     if reply.get("unverified_references"):
         pdf.note("The AI mentioned controls that are not part of this assessment, so they are not verified: "
                  + ", ".join(reply["unverified_references"]) + ".", color=AMBER, fill=AMBER_BG)
-    if report and report["executive_summary"]:
+    if report and report["executive_summary"] and audience in ("complete", "executive"):
         pdf.section("Executive summary", "ai")
         for paragraph in report["executive_summary"]:
             pdf.para(paragraph)
     if report and report["next_steps"]:
         pdf.section("Recommended next steps", "ai")
         pdf.numbered(report["next_steps"])
-    _scope(pdf, info, summary)
-    _findings(pdf, failures, (report or {}).get("findings", {}))
-    _lists(pdf, findings)
-    _appendix(pdf, findings)
+    if audience == "executive":
+        if len({f.product for f in findings}) > 1:
+            _by_product(pdf, findings)
+        _required_failures(pdf, failures)
+        _scope(pdf, info, summary)
+        return bytes(pdf.output())
+    if audience != "engineer":
+        _scope(pdf, info, summary)
+    _findings(pdf, failures, (report or {}).get("findings", {}) if audience != "auditor" else {}, audience)
+    if plan:
+        _plan(pdf, plan)
+    if audience in ("complete", "auditor"):
+        _lists(pdf, findings)
+        _appendix(pdf, findings)
     return bytes(pdf.output())

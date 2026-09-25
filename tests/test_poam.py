@@ -219,3 +219,12 @@ def test_evidence_links_resolve_to_the_scan_file_in_back_matter(built):
     resources = {r["uuid"] for r in doc["back-matter"]["resources"]}
     links = [l["href"] for o in doc["observations"] for l in o.get("links", [])]
     assert links and all(h.startswith("#") and h[1:] in resources for h in links)
+
+
+def test_every_remediation_has_the_standard_undated_milestones(built):
+    for risk in built["poam"]["risks"]:
+        (rem,) = risk["remediations"]
+        tasks = rem["tasks"]
+        assert [t["title"] for t in tasks] == ["Plan the change", "Apply the change", "Verify with a ScubaGear rescan"]
+        assert all(t["type"] == "milestone" and "timing" not in t for t in tasks)   # no invented dates
+        assert "deadline" not in risk
