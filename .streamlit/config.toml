@@ -3,33 +3,40 @@
 showErrorDetails = "none"
 toolbarMode = "minimal"
 
+# "Assessment record" theme: a cool paper-like neutral base, ink for text and actions, and colour
+# kept for results only (red = failed, amber = warning, green = passed). No brand blue, so red
+# always means failure. Public Sans is the US Web Design System typeface; the app quotes the
+# baseline's requirement text in Merriweather (loaded in app/app.py) to set it apart from the UI.
 [theme]
 base = "light"
-font = "'Public Sans':https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap"
+font = "'Public Sans':https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&display=swap"
 codeFont = "'IBM Plex Mono':https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
-headingFontWeights = [700, 600, 600, 600, 600, 600]
-baseRadius = "0.5rem"
+headingFontWeights = [800, 700, 700, 600, 600, 600]
+headingFontSizes = ["2.1rem", "1.45rem", "1.15rem", "1rem", "0.95rem", "0.9rem"]
+baseRadius = "0.25rem"
 baseFontSize = 15
 
-primaryColor = "#2446A8"
-backgroundColor = "#F5F7FA"
-secondaryBackgroundColor = "#EAEEF4"
-textColor = "#0E1B2C"
-borderColor = "#D9DFE8"
-linkColor = "#2446A8"
-codeTextColor = "#0E1B2C"
-codeBackgroundColor = "#EAEEF4"
-greenColor = "#1F7A5A"
-redColor = "#B3261E"
-blueColor = "#2446A8"
+primaryColor = "#1C2733"          # ink: primary buttons, active tab, focus
+backgroundColor = "#F6F7F5"       # paper
+secondaryBackgroundColor = "#ECEEEA"
+textColor = "#1C2733"
+borderColor = "#D4D9D2"           # rule
+linkColor = "#1C2733"
+codeTextColor = "#1C2733"
+codeBackgroundColor = "#ECEEEA"
+dataframeBorderColor = "#D4D9D2"
+dataframeHeaderBackgroundColor = "#ECEEEA"
+
+redColor = "#B42318"              # failed SHALL requirement
+orangeColor = "#B25E09"           # ScubaGear warning (failed SHOULD)
+greenColor = "#2F7A58"            # passed
+grayColor = "#5F6B7A"             # not assessed, neutral tags
+blueColor = "#3D5A73"             # informational notes only, kept muted
 
 [theme.sidebar]
-backgroundColor = "#0E1B2C"
-secondaryBackgroundColor = "#1A2A40"
-textColor = "#DCE3EE"
-primaryColor = "#3A63D8"
-borderColor = "#2A3C57"
-greenColor = "#5FC49A"
-greenBackgroundColor = "#15352D"
-greenTextColor = "#8FDDB9"
-codeBackgroundColor = "#1A2A40"
+backgroundColor = "#ECEEEA"
+secondaryBackgroundColor = "#E2E5DF"
+textColor = "#1C2733"
+primaryColor = "#1C2733"
+borderColor = "#D4D9D2"
+codeBackgroundColor = "#E2E5DF"

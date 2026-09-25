@@ -27,20 +27,21 @@ from datetime import datetime, timezone
 from fpdf import FPDF
 from fpdf.fonts import FontFace
 
-NAVY = (14, 27, 44)
-TEXT = (38, 50, 68)
-MUTED = (96, 110, 130)
-ACCENT = (36, 70, 168)
-RED = (179, 38, 30)
-RED_BG = (251, 234, 232)
-AMBER = (154, 90, 0)
-AMBER_BG = (253, 243, 224)
-GREEN = (31, 122, 90)
-GREEN_BG = (228, 244, 236)
-GRAY_BG = (236, 239, 244)
-PANEL = (234, 238, 244)
-RULE = (218, 223, 231)
-ZEBRA = (247, 249, 252)
+# Same palette as the app (.streamlit/config.toml): ink and paper, colour only for results.
+NAVY = (28, 39, 51)        # ink #1C2733
+TEXT = (43, 55, 68)
+MUTED = (95, 107, 122)     # #5F6B7A
+ACCENT = (61, 90, 115)     # slate #3D5A73: AI labels and list numbers, never a result colour
+RED = (180, 35, 24)        # #B42318 failed SHALL
+RED_BG = (248, 228, 225)
+AMBER = (178, 94, 9)       # #B25E09 ScubaGear warning
+AMBER_BG = (249, 235, 219)
+GREEN = (47, 122, 88)      # #2F7A58 passed
+GREEN_BG = (227, 239, 232)
+GRAY_BG = (236, 238, 234)
+PANEL = (238, 241, 243)    # AI note background, as in the app
+RULE = (212, 217, 210)     # #D4D9D2
+ZEBRA = (246, 247, 245)
 WHITE = (255, 255, 255)
 
 BODY_PT, BODY_H = 10.5, 5.4           # body text size (pt) and line height (mm), about 1.45 spacing
@@ -295,17 +296,17 @@ def _card(pdf, f, analysis):
     pdf.tag(f.obligation, MUTED, GRAY_BG)
     pdf.ln(8)
 
-    def field(name, text, color=TEXT):
+    def field(name, text, color=TEXT, serif=False):
         pdf.set_x(inner_x)
         pdf.set_font("helvetica", "B", 8.5)
         pdf.set_text_color(*MUTED)
         pdf.cell(label_w, BODY_H - 0.4, name)
-        pdf.set_font("helvetica", "", 9.5)
+        pdf.set_font("times" if serif else "helvetica", "", 10.5 if serif else 9.5)   # the baseline's own words in serif
         pdf.set_text_color(*color)
         pdf.multi_cell(inner_w - label_w, BODY_H - 0.4, rich(text), markdown=True, align="L", new_x="LMARGIN", new_y="NEXT")
         pdf.ln(1.5)
 
-    field("Requirement", f.requirement)
+    field("Requirement", f.requirement, serif=True)
     field("Scan result", f.finding or "No details recorded.")
 
     if analysis and (analysis.get("why_it_matters") or analysis.get("how_to_fix")):

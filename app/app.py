@@ -14,6 +14,7 @@ in oscal/Controls by the pipeline (pipeline/make_assessment_results.py, then
 comparison/compare_oscal.py) in a temporary folder that is deleted afterwards. The result lives only
 in that browser session; a refresh starts over. Controls the scan has no record for are NOT_ASSESSED.
 """
+import html
 import importlib.util
 import json
 import logging
@@ -39,8 +40,7 @@ from report_pdf import build_pdf  # noqa: E402
 
 log = logging.getLogger(__name__)
 
-ASSISTANT_AVATAR = ":material/shield_lock:"
-USER_AVATAR = ":material/person:"
+PAGE_ICON = ":material/shield_lock:"
 
 STATUS_BADGE = {  # status -> (label, color, icon)
     "PASS": ("Pass", "green", ":material/check_circle:"),
@@ -50,18 +50,69 @@ STATUS_BADGE = {  # status -> (label, color, icon)
 WARNING_BADGE = ("Warning", "orange", ":material/warning:")   # ScubaGear's word for a failed SHOULD
 PRIORITY_BADGE = {"high": ("High priority", "red"), "moderate": ("Moderate priority", "orange")}
 
-TAB_OVERVIEW = ":material/dashboard: Overview"
-TAB_FINDINGS = ":material/fact_check: Findings"
-TAB_CHAT = ":material/forum: Ask the AI"
-TAB_REPORT = ":material/picture_as_pdf: Report"
+TAB_OVERVIEW = "Overview"
+TAB_FINDINGS = "Findings"
+TAB_CHAT = "Questions"
+TAB_REPORT = "Report"
 FIX_FIRST = 3   # high-priority failures shown on the overview
+POLICY_ID = re.compile(r"^MS\.[A-Z]+\.(\d+)\.(\d+)v\d+$")   # MS.AAD.<section>.<policy>v<version>
+MAP_CLASS = {"Fail": "fail", "Warning": "warn", "Pass": "pass", "Not assessed": "na"}
 
-SUGGESTIONS = {
-    ":material/low_priority: What should we fix first?": "What should we fix first, and why?",
-    ":material/gpp_maybe: Our biggest identity risk": "What is our biggest identity risk right now?",
-    ":material/admin_panel_settings: Privileged access": "How are we doing on privileged access?",
-    ":material/passkey: MFA and sign-in": "How are we doing on MFA and sign-in protection?",
-}
+# Colours and type beyond what .streamlit/config.toml can express: the baseline map cells (styled by
+# their widget key, st-key-map_<result>_...), the legend swatches, and the baseline's requirement
+# text quoted in Merriweather so the standard's own words read differently from the interface.
+STYLE = """<style>
+@import url('https://fonts.googleapis.com/css2?family=Merriweather:wght@400;700&display=swap');
+.scb-req { font-family: Merriweather, Georgia, serif; font-size: 0.98rem; line-height: 1.65; color: #1C2733;
+           margin: 0.15rem 0 0.5rem; padding-left: 0.85rem; border-left: 3px solid #D4D9D2; max-width: 75ch; }
+.scb-req-sm { font-size: 0.88rem; line-height: 1.6; }
+.scb-verdict { font-size: 1.5rem; font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; color: #1C2733;
+               margin: 0.4rem 0 0.35rem; max-width: 62ch; }
+.scb-dialog-title { font-size: 1.3rem; font-weight: 600; line-height: 1.35; color: #1C2733; margin: 0 0 0.2rem; }
+.scb-legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.3rem; font-size: 0.85rem; color: #5F6B7A; margin: 0 0 0.6rem; }
+.scb-legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
+.scb-legend i { width: 0.95rem; height: 0.95rem; border-radius: 2px; display: inline-block; }
+.scb-sw-fail { background: #B42318; }
+.scb-sw-warn { background: #B25E09; }
+.scb-sw-pass { background: #E3EFE8; box-shadow: inset 0 0 0 1px #BFD8C8; }
+.scb-sw-na { background: repeating-linear-gradient(135deg, #ECEEEA 0 3px, #C9CEC6 3px 5px); box-shadow: inset 0 0 0 1px #C9CEC6; }
+[class*="st-key-map_"] button { width: 3rem; min-height: 2.3rem; padding: 0; border-radius: 3px; }
+[class*="st-key-map_"] button p { font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+[class*="st-key-map_fail_"] button, [class*="st-key-map_fail_"] button:hover {
+    background: #B42318; border-color: #B42318; color: #FFFFFF; }
+[class*="st-key-map_warn_"] button, [class*="st-key-map_warn_"] button:hover {
+    background: #B25E09; border-color: #B25E09; color: #FFFFFF; }
+[class*="st-key-map_pass_"] button, [class*="st-key-map_pass_"] button:hover {
+    background: #E3EFE8; border-color: #BFD8C8; color: #2F7A58; }
+[class*="st-key-map_na_"] button, [class*="st-key-map_na_"] button:hover {
+    background: repeating-linear-gradient(135deg, #ECEEEA 0 4px, #D9DDD5 4px 6px); border-color: #C9CEC6; color: #5F6B7A; }
+[class*="st-key-map_"] button:hover { filter: brightness(0.92); }
+[class*="st-key-map_"] button:focus-visible { outline: 2px solid #1C2733; outline-offset: 2px; }
+[class*="st-key-row_"] details { border: none; border-bottom: 1px solid #D4D9D2; border-radius: 0; background: transparent; }
+[class*="st-key-row_"] summary { padding-top: 0.6rem; padding-bottom: 0.6rem; }
+[class*="st-key-row_"] { border-left: 4px solid transparent; }
+[class*="st-key-row_fail_"] { border-left-color: #B42318; }
+[class*="st-key-row_warn_"] { border-left-color: #B25E09; }
+[class*="st-key-note_"] { background: #EEF1F3; border-radius: 4px; padding: 0.75rem 1rem; }
+.scb-note-label { font-size: 0.85rem; font-weight: 700; color: #3D5A73; margin: 0 0 0.25rem; }
+.scb-q { font-size: 1.12rem; font-weight: 700; line-height: 1.4; color: #1C2733; margin: 0.4rem 0 0.35rem; max-width: 70ch; }
+.scb-rule { border: none; border-top: 1px solid #D4D9D2; margin: 1.1rem 0 0.6rem; }
+.scb-dl, .scb-dl dt, .scb-dl dd { margin-left: 0; padding-left: 0; }
+.scb-dl { margin: 0; }
+.scb-dl dt { font-size: 0.75rem; color: #5F6B7A; margin-top: 0.55rem; }
+.scb-dl dd { margin: 0; font-size: 0.92rem; color: #1C2733; overflow-wrap: anywhere; }
+.scb-dl dd span { color: #5F6B7A; }
+</style>"""
+
+EXAMPLE_QUESTIONS = [
+    "What should we fix first, and why?",
+    "What is our biggest identity risk right now?",
+    "How are we doing on privileged access?",
+]
+NOTE_REQUEST = (
+    "Write a short analyst note on the failed control `{control_id}` for this tenant, in at most 120 words: "
+    "why this failure matters (as analysis, not fact) and how to approach the fix, in priority order. Do not "
+    "restate the requirement or the scan result; they are shown next to your note.")
 
 GENERIC_ERROR = ("The AI service didn't return an answer. Check the Azure OpenAI settings in `.env` "
                  "and your network connection, then try again.")
@@ -207,8 +258,10 @@ def process_scan(name, raw):
 
 
 def reset_for_new_data():
-    """Answers and reports about the previous scan no longer apply."""
+    """Answers, notes and reports about the previous scan no longer apply."""
     st.session_state.messages = []
+    st.session_state.notes = {}
+    st.session_state.note_pending = None
     st.session_state.pending = None
     st.session_state.report = None
     st.session_state.report_error = None
@@ -311,127 +364,171 @@ def scan_age_days(iso):
 
 def ai_off_note():
     """Says plainly what needs the AI and that everything else still works."""
-    st.info(f"**AI features are off.** The chat, Ask AI and the PDF report need Azure OpenAI. {problem} "
+    st.info(f"**AI features are off.** Questions, analyst notes and the PDF report need Azure OpenAI. {problem} "
             "Everything else works without it.", icon=":material/cloud_off:")
 
 
 def styled_status(rows):
     """A dataframe with the Status column colour-coded like the badges."""
-    colors = {"Pass": ("#1F7A5A", "#E4F4EC"), "Fail": ("#B3261E", "#FBEAE8"),
-              "Warning": ("#9A5A00", "#FDF3E0"), "Not assessed": ("#5B6A80", "#ECEFF4")}
+    colors = {"Pass": ("#2F7A58", "#E3EFE8"), "Fail": ("#B42318", "#F8E4E1"),
+              "Warning": ("#B25E09", "#F9EBDB"), "Not assessed": ("#5F6B7A", "#ECEEEA")}
     return pd.DataFrame(rows).style.map(
         lambda v: f"color: {colors[v][0]}; background-color: {colors[v][1]}; font-weight: 600" if v in colors else "",
         subset=["Status"])
 
 
-def ask_ai_button(f, key_prefix):
-    st.button("Ask AI", key=f"{key_prefix}_{f.control_id}", icon=":material/auto_awesome:", type="tertiary",
-              disabled=bool(problem), on_click=queue,
-              args=("explain", f"Explain `{f.control_id}`: what it requires, what the scan found, and how to "
-                               "fix it.", f.control_id))
+def requirement(text, small=False):
+    """The baseline's own requirement text, quoted in the serif face."""
+    css = "scb-req scb-req-sm" if small else "scb-req"
+    st.html(f'<p class="{css}">{html.escape(text or "")}</p>')
 
 
-def area_rows(findings):
-    """One row per catalog area: pass rate over the assessed controls, and the counts behind it.
-    Areas with the most failures come first."""
-    areas = {}
+def policy_number(control_id):
+    """(section, policy) from MS.AAD.7.4v1 -> (7, 4); unknown ids sort last."""
+    m = POLICY_ID.match(control_id)
+    return (int(m[1]), int(m[2])) if m else (99, 0)
+
+
+def open_control(control_id):
+    st.session_state.open_control = control_id
+
+
+def baseline_map(findings):
+    """Every policy in the baseline, one row per SCuBA section, one cell per policy, coloured by result.
+    Selecting a cell opens that control's details."""
+    sections = {}
     for f in findings:
-        counts = areas.setdefault(f.group or "Other", {"PASS": 0, "FAIL": 0, "NOT ASSESSED": 0})
-        counts[f.status] = counts.get(f.status, 0) + 1
-    rows = []
-    for area, c in areas.items():
-        assessed = c["PASS"] + c["FAIL"]
-        rows.append({"Area": area, "Pass rate": round(100 * c["PASS"] / assessed) if assessed else None,
-                     "Passing": c["PASS"], "Failing": c["FAIL"], "Not assessed": c["NOT ASSESSED"]})
-    return sorted(rows, key=lambda r: -r["Failing"])
+        section, _ = policy_number(f.control_id)
+        sections.setdefault(section, {"title": f.group, "controls": []})["controls"].append(f)
+    for section in sorted(sections):
+        controls = sections[section]["controls"]
+        passed = sum(f.status == "PASS" for f in controls)
+        assessed = sum(f.status in ("PASS", "FAIL") for f in controls)
+        with st.container(horizontal=True, vertical_alignment="center", gap="medium"):
+            with st.container(width=280, gap=None):
+                st.markdown(f"**{section}**&nbsp;&nbsp;{sections[section]['title']}")
+                st.caption(f"{passed} of {assessed} pass" if assessed else "Not assessed")
+            with st.container(horizontal=True, gap="xxsmall", width="stretch"):
+                for f in controls:
+                    label = result_badge(f.status, f.scuba_result)[0]
+                    sec, num = policy_number(f.control_id)
+                    st.button(f"{sec}.{num}", key=f"map_{MAP_CLASS[label]}_{f.control_id.replace('.', '_')}",
+                              help=f"{f.control_id}: {f.title} ({label})", on_click=open_control,
+                              args=(f.control_id,))
 
 
-def finding_card(f):
-    """One failed control on the overview: title, tags, requirement and an Ask AI button."""
-    with st.container(border=True):
-        st.markdown(f"**{f.control_id}** · {f.title}")
-        st.caption(f.requirement)
-        with st.container(horizontal=True, vertical_alignment="center", horizontal_alignment="distribute"):
-            with st.container(horizontal=True, gap="xsmall", width="content"):
+def safe_key(control_id):
+    return control_id.replace(".", "_")
+
+
+def control_facts(f, key_prefix):
+    """Everything verified about one control. For a failed control, the AI's analyst note sits in a
+    narrower column beside the facts, so the two never mix."""
+    if f.status == "FAIL":
+        facts, margin = st.columns([3, 2], gap="large")
+    else:
+        facts, margin = st.container(), None
+    with facts:
+        label, _, _ = result_badge(f.status, f.scuba_result)
+        with st.container(horizontal=True, gap="xsmall"):
+            if f.priority in PRIORITY_BADGE:
                 text, color = PRIORITY_BADGE[f.priority]
                 st.badge(text, color=color)
-                status_badge(f.status, scuba_result=f.scuba_result)
-            ask_ai_button(f, "overview")
-
-
-def finding_details(f):
-    """One failed control on the Findings tab, with every verified fact behind it."""
-    icon = ":material/error:" if f.priority == "high" else ":material/warning:"
-    with st.expander(f"**{f.control_id}** · {f.title}", icon=icon):
-        with st.container(horizontal=True, gap="xsmall"):
-            text, color = PRIORITY_BADGE[f.priority]
-            st.badge(text, color=color)
-            label, _, _ = result_badge(f.status, f.scuba_result)
-            status_badge(f.status, label=f"ScubaGear: {label}", scuba_result=f.scuba_result)
+            status_badge(f.status, label=f"ScubaGear: {label}" if f.status != "NOT ASSESSED" else None,
+                         scuba_result=f.scuba_result)
             st.badge(f.obligation, color="gray")
-            st.badge(f.group, color="gray", icon=":material/category:")
-        st.markdown(f"**Requirement:** {f.requirement}")
-        st.markdown(f"**Scan result:** {f.finding or 'No details recorded.'}")
+            st.badge(f.group, color="gray")
+        st.markdown("**Requirement**")
+        requirement(f.requirement)
+        if f.status == "NOT ASSESSED":
+            st.markdown(f"**Why it has no result:** {not_assessed_reason(f.control_id, results_by_id)}")
+        else:
+            st.markdown(f"**Scan result:** {f.finding or 'No details recorded.'}")
         if f.evidence:
-            st.caption(f":material/description: {f.evidence}")
-        if f.remediation:
+            st.caption(f"Evidence: {f.evidence}")
+        if f.status == "FAIL" and f.remediation:
             st.markdown("**How to fix** (SCuBA guidance)")
             st.markdown(f.remediation)
         if f.nist:
             st.caption("Related NIST SP 800-53 controls: " + ", ".join(n.replace("NIST SP 800-53 Rev 5 ", "")
                                                                      for n in f.nist))
-        ask_ai_button(f, "findings")
+    if margin is not None:
+        with margin:
+            analyst_note(f, key_prefix)
 
 
-def render_fact(f):
-    """One verified record, straight from OSCAL."""
-    st.markdown(f"**{f['control_id']}** · {f['title']}")
-    with st.container(horizontal=True, gap="xsmall"):
-        status_badge(f["status"], scuba_result=f.get("scuba_result"))
-        st.badge(f["obligation"], color="gray")
-        if f.get("priority") in PRIORITY_BADGE:
-            text, color = PRIORITY_BADGE[f["priority"]]
-            st.badge(text, color=color)
-    st.markdown(f"**Requirement:** {f['requirement']}")
-    if f.get("finding"):
-        st.markdown(f"**Scan result:** {f['finding']}")
-    if f.get("evidence"):
-        st.caption(f":material/description: {f['evidence']}")
-    if f["status"] == "FAIL" and f.get("remediation"):
-        st.markdown("**Remediation (SCuBA guidance)**")
-        st.markdown(f["remediation"])
-
-
-def render_reply(msg):
-    if msg.get("error"):
-        st.error(msg["content"], icon=":material/error:")
-        return
-    st.caption(":material/auto_awesome: AI-generated analysis. Check it against the verified facts below.")
-    st.markdown(msg["content"])
-    if msg["unverified"]:
-        ids = ", ".join(f"`{c}`" for c in msg["unverified"])
-        st.warning(f"Mentioned but not part of this assessment, so not verified: {ids}", icon=":material/report:")
-    if msg["verified"]:
-        with st.container(horizontal=True, gap="xsmall"):
-            for f in msg["verified"]:
-                result = result_badge(f["status"], f.get("scuba_result"))[0].lower()
-                status_badge(f["status"], label=f["control_id"], help=f"{f['title']}: {result}",
-                             scuba_result=f.get("scuba_result"))
-        n = len(msg["verified"])
-        with st.expander(f"Verified facts from OSCAL ({n} control{'s' if n != 1 else ''})", icon=":material/verified:"):
-            for i, f in enumerate(msg["verified"]):
-                if i:
-                    st.space("small")
-                render_fact(f)
-
-
-def render_message(msg):
-    if msg["role"] == "user":
-        with st.chat_message("user", avatar=USER_AVATAR):
-            st.markdown(msg["content"])
+def analyst_note(f, key_prefix):
+    """The AI's short explanation of one failed control, written on request and kept for the session."""
+    st.html('<p class="scb-note-label">Analyst note (AI)</p>')
+    if st.session_state.note_pending == f.control_id and not problem:
+        with st.spinner("Writing the note…"):
+            write_note(f)
+    note = st.session_state.notes.get(f.control_id)
+    if note is None:
+        st.caption("A short AI explanation of why this failure matters and how to approach the fix. "
+                   "Check it against the facts beside it.")
+        st.button("Write analyst note", key=f"{key_prefix}_note_{safe_key(f.control_id)}", disabled=bool(problem),
+                  on_click=request_note, args=(f.control_id, key_prefix == "dialog"))
+    elif note.get("error"):
+        st.error(note["error"], icon=":material/error:")
+        st.button("Try again", key=f"{key_prefix}_note_{safe_key(f.control_id)}", disabled=bool(problem),
+                  on_click=request_note, args=(f.control_id, key_prefix == "dialog"))
     else:
-        with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
-            render_reply(msg)
+        with st.container(key=f"note_{key_prefix}_{safe_key(f.control_id)}"):
+            st.markdown(note["text"])
+            if note["unverified"]:
+                st.caption("Mentions controls outside this assessment, so not verified: "
+                           + ", ".join(note["unverified"]))
+
+
+def write_note(f):
+    st.session_state.note_pending = None
+    try:
+        reply = assistant.answer(NOTE_REQUEST.format(control_id=f.control_id))
+        st.session_state.notes[f.control_id] = {"text": reply["text"], "unverified": reply["unverified_references"]}
+    except Exception as exc:
+        log.exception("Analyst note failed")
+        st.session_state.notes[f.control_id] = {"error": friendly_error(exc)}
+
+
+@st.dialog("Control details", width="large")
+def control_dialog(f):
+    st.html(f'<p class="scb-dialog-title"><b>{html.escape(f.control_id)}</b>&nbsp;&nbsp;{html.escape(f.title)}</p>')
+    control_facts(f, "dialog")
+
+
+def worklist_row(f, key_prefix):
+    """One failed control as a flat row with a result bar on the left; opens to the full details."""
+    label, color, _ = result_badge(f.status, f.scuba_result)
+    with st.expander(f"**{f.control_id}**&nbsp;&nbsp;{f.title}&nbsp;&nbsp;:{color}[{label}]",
+                     key=f"row_{MAP_CLASS[label]}_{key_prefix}_{safe_key(f.control_id)}"):
+        control_facts(f, key_prefix)
+
+
+def render_exchange(question, answer, index):
+    """One question and its answer in the Q&A record, with the controls it cites listed underneath."""
+    if index:
+        st.html('<hr class="scb-rule">')
+    st.html(f'<p class="scb-q">{html.escape(question)}</p>')
+    if answer is None:
+        return
+    if answer.get("error"):
+        st.error(answer["content"], icon=":material/error:")
+        return
+    st.caption("AI analysis")
+    st.markdown(answer["content"])
+    if answer["unverified"]:
+        st.warning("Mentioned but not part of this assessment, so not verified: "
+                   + ", ".join(f"`{c}`" for c in answer["unverified"]), icon=":material/report:")
+    if answer["verified"]:
+        st.caption("Controls this answer relies on (select one to see the verified facts)")
+        for i, fact in enumerate(answer["verified"], 1):
+            label, color, _ = result_badge(fact["status"], fact.get("scuba_result"))
+            with st.container(horizontal=True, vertical_alignment="center", gap="small"):
+                st.markdown(f"{i}.", width=22)
+                st.button(f"{fact['control_id']}  {fact['title']}", key=f"cite_{index}_{i}", type="tertiary",
+                          on_click=open_control, args=(fact["control_id"],))
+                st.markdown(f":{color}[{label}]", width="content")
 
 
 # --- State and callbacks ------------------------------------------------------
@@ -443,6 +540,9 @@ if "report" not in st.session_state:
     st.session_state.report = None             # {"pdf", "generated", "file_name"} once generated
     st.session_state.report_requested = False
     st.session_state.report_error = None
+if "notes" not in st.session_state:
+    st.session_state.notes = {}                # control id -> analyst note (or error) for this scan
+    st.session_state.note_pending = None
 if "upload" not in st.session_state:
     st.session_state.upload = None             # {"name", "assistant"} once a scan is loaded
     st.session_state.upload_error = None
@@ -457,11 +557,10 @@ def queue(kind, prompt, control_id=None):
     goto(TAB_CHAT)
 
 
-def pick_suggestion():
-    choice = st.session_state.suggestion
-    if choice:
-        queue("chat", SUGGESTIONS[choice])
-    st.session_state.suggestion = None
+def request_note(control_id, reopen_dialog=False):
+    st.session_state.note_pending = control_id
+    if reopen_dialog:   # a click inside the dialog reruns the page; keep the dialog open for the note
+        open_control(control_id)
 
 
 def clear_conversation():
@@ -487,29 +586,28 @@ def clear_scan():
 
 # --- Page ---------------------------------------------------------------------
 loaded = st.session_state.upload is not None
-st.set_page_config(page_title="SCuBA posture assistant", page_icon=ASSISTANT_AVATAR,
+st.set_page_config(page_title="SCuBA posture assistant", page_icon=PAGE_ICON,
                    layout="wide" if loaded else "centered",           # the dashboard uses the full width
                    initial_sidebar_state="expanded" if loaded else "collapsed")
 
 problem = ai_problem()
+st.html(STYLE)
 
 with st.sidebar:
-    st.markdown(f"### {ASSISTANT_AVATAR} SCuBA assistant")
-    st.caption("CISA SCuBA baseline for Microsoft Entra ID (MS.AAD)")
+    st.markdown("**SCuBA posture assistant**")
+    st.caption("Checks a Microsoft Entra ID tenant against the CISA SCuBA baseline.")
     if problem:
-        st.badge("AI offline", icon=":material/cloud_off:", color="red")
-        st.caption("The chat, Ask AI and the PDF report are unavailable.")
-    else:
-        st.badge("AI ready", icon=":material/cloud_done:", color="green")
+        st.badge("AI offline", color="red")
+        st.caption("Questions, analyst notes and the PDF report are unavailable.")
 
 
 # --- Upload panel: shown until a scan is loaded --------------------------------
 if st.session_state.upload is None:
-    st.title("SCuBA posture assistant", icon=ASSISTANT_AVATAR)
+    st.title("SCuBA posture assistant", anchor=False)
     st.caption("Upload the results of a ScubaGear scan to see where your Microsoft Entra ID tenant stands "
                "against the CISA SCuBA baseline, ask questions about it, and generate a compliance report.")
     with st.container(border=True):
-        st.subheader("Upload your ScubaGear results", icon=":material/upload_file:")
+        st.subheader("Upload your ScubaGear results", anchor=False)
         st.markdown("Choose the **ScubaResults JSON file** from your ScubaGear output folder. "
                     f"Only .json files are accepted, up to {MAX_UPLOAD_MB} MB.")
         uploaded = st.file_uploader("ScubaGear results file", type=["json"], key="scan_upload",
@@ -522,29 +620,25 @@ if st.session_state.upload is None:
             st.error(st.session_state.upload_error, icon=":material/block:")
         with st.container(horizontal=True, vertical_alignment="center"):
             st.caption("No scan to hand?", width="content")
-            st.button("Try the sample scan", icon=":material/science:", type="tertiary", on_click=request_sample)
-        with st.expander("Where do I find this file?", icon=":material/help:"):
+            st.button("Try the sample scan", type="tertiary", on_click=request_sample)
+        with st.expander("Where do I find this file?"):
             st.markdown(
                 "1. Run ScubaGear in PowerShell, for example `Invoke-SCuBA -ProductNames aad`.\n"
                 "2. Open the output folder it creates, named like `M365BaselineConformance_<date>`.\n"
                 "3. Upload the **ScubaResults** JSON file from that folder (`ScubaResults.json`, or "
                 "`ScubaResults_<id>.json` in newer versions).")
 
-    st.markdown("**What you'll get**")
-    with st.container(horizontal=True, gap="small"):
-        for icon, title, text in (
-                (":material/dashboard:", "Overview", "Pass rates by area and what to fix first"),
-                (":material/fact_check:", "Findings", "Every failed control with the scan result and fix steps"),
-                (":material/forum:", "Ask the AI", "Questions answered with the verified results cited"),
-                (":material/picture_as_pdf:", "Report", "A PDF compliance report to share")):
-            with st.container(border=True):
-                st.markdown(f"{icon} **{title}**")
-                st.caption(text)
+    st.markdown(
+        "**What you'll get**\n\n"
+        "- **Overview:** every policy in the baseline at a glance, and what to fix first\n"
+        "- **Findings:** each failed control with what the scan found and how to fix it\n"
+        "- **Questions:** ask about the scan; answers list the controls they rely on\n"
+        "- **Report:** a PDF compliance report to share")
     if problem:
         ai_off_note()
-    st.caption(":material/lock: Your file is processed in memory on this server and never saved. Only you "
-               "can see it, and it is gone when you refresh or close the page. When you use the chat or the "
-               "report, the scan's per-control results are sent to Azure OpenAI.")
+    st.caption("Your file is processed in memory on this server and never saved. Only you can see it, and it is "
+               "gone when you refresh or close the page. When you use questions, analyst notes or the report, the "
+               "scan's per-control results are sent to Azure OpenAI.")
     st.stop()
 
 # --- Dashboard: a scan is loaded -------------------------------------------------
@@ -552,10 +646,10 @@ assistant = st.session_state.upload["assistant"]
 findings, info, summary = assistant.findings, assistant.info, assistant.summary
 failures = prioritized_failures(findings)
 high_priority = [f for f in failures if f.priority == "high"]
-warnings = sum(result_badge(f.status, f.scuba_result) == WARNING_BADGE for f in failures)
 unassessed = [f for f in findings if f.status == "NOT ASSESSED"]
 results_by_id = st.session_state.upload.get("scan_results", {})
 age = scan_age_days(info.get("scan_time"))
+scanned = format_time(info.get("scan_time"))
 if st.session_state.flash:
     st.toast(st.session_state.flash, icon=":material/check_circle:")
     st.session_state.flash = None
@@ -563,65 +657,55 @@ if st.session_state.flash:
 with st.sidebar:
     st.space("small")
     st.markdown("**Scan**")
-    st.caption(f":material/upload_file: {st.session_state.upload['name']}")
-    st.markdown(
-        f":material/domain: {info.get('tenant') or 'Unknown tenant'}  \n"
-        f":material/language: {info.get('domain') or 'Unknown domain'}  \n"
-        f":material/schedule: {format_time(info.get('scan_time'))}"
-        + (f" ({age} day{'s' if age != 1 else ''} ago)" if age is not None else "") + "  \n"
-        f":material/build: ScubaGear {info.get('tool_version') or 'unknown'}"
-    )
-    st.button("Upload a different scan", icon=":material/upload:", width="stretch", on_click=clear_scan)
+    age_text = f"<br><span>{age} day{'s' if age != 1 else ''} ago</span>" if age is not None else ""
+    st.html('<dl class="scb-dl">'
+            f"<dt>Tenant</dt><dd>{html.escape(info.get('tenant') or 'Unknown')}</dd>"
+            f"<dt>Domain</dt><dd>{html.escape(info.get('domain') or 'Unknown')}</dd>"
+            f"<dt>Scanned</dt><dd>{html.escape(scanned)}{age_text}</dd>"
+            f"<dt>Scanner</dt><dd>ScubaGear {html.escape(info.get('tool_version') or 'unknown')}</dd>"
+            f"<dt>File</dt><dd>{html.escape(st.session_state.upload['name'])}</dd></dl>")
+    st.space("small")
+    st.button("Upload a different scan", width="stretch", on_click=clear_scan)
 
-st.title("SCuBA posture assistant", icon=ASSISTANT_AVATAR)
-st.caption(f"ScubaGear scan of {info.get('tenant') or 'your tenant'}, checked against the CISA SCuBA baseline for "
-           "Microsoft Entra ID. Statuses come from the scan; anything the AI writes is labelled as AI analysis.")
+# The tenant is the subject of the page, so it is the title.
+st.title(info.get("domain") or info.get("tenant") or "Your tenant", anchor=False)
+st.caption(f"Microsoft Entra ID assessed against the CISA SCuBA baseline, from a ScubaGear "
+           f"{info.get('tool_version') or ''} scan on {scanned}. Statuses come from the scan; "
+           "anything the AI writes is labelled as AI.")
 if age is not None and age > STALE_SCAN_DAYS:
-    st.warning(f"**This scan is {age} days old** (run {format_time(info.get('scan_time'))}). The tenant's settings "
-               "may have changed since; re-run ScubaGear for an up-to-date picture.", icon=":material/history:")
+    st.warning(f"**This scan is {age} days old.** The tenant's settings may have changed since; re-run "
+               "ScubaGear for an up-to-date picture.", icon=":material/history:")
 if problem:
     ai_off_note()
 
 tab_overview, tab_findings, tab_chat, tab_report = st.tabs(
     [TAB_OVERVIEW, TAB_FINDINGS, TAB_CHAT, TAB_REPORT], key="tab", on_change="rerun")
 
-# Overview: the headline numbers, where the problems are, and what to fix first
+# Overview: the verdict, the whole baseline at a glance, and what to fix first
 with tab_overview:
-    with st.container(horizontal=True):
-        st.metric("Passing", f"{summary['passed']} of {summary['assessed']}", icon=":material/check_circle:",
-                  border=True, help="Assessed controls that meet the SCuBA requirement")
-        st.metric("Failing", summary["failed"], icon=":material/cancel:", border=True,
-                  help=f"{summary['failed'] - warnings} failed SHALL / SHALL NOT requirements and {warnings} "
-                       "ScubaGear warnings (failed SHOULD requirements)")
-        st.metric("High priority", len(high_priority), icon=":material/priority_high:", border=True,
-                  help="Failed SHALL and SHALL NOT requirements")
-        st.metric("Not assessed", summary["not_assessed"], icon=":material/help:", border=True,
-                  help="Controls ScubaGear returned no result for")
+    if failures:
+        verdict = (f"{summary['failed']} of {summary['assessed']} assessed controls fail. "
+                   f"{len(high_priority)} of them {'is' if len(high_priority) == 1 else 'are'} required (SHALL).")
+    else:
+        verdict = f"All {summary['assessed']} assessed controls pass."
+    st.html(f'<p class="scb-verdict">{html.escape(verdict)}</p>')
+    counts = {label: sum(result_badge(f.status, f.scuba_result)[0] == label for f in findings) for label in MAP_CLASS}
+    st.html('<div class="scb-legend">' + "".join(
+        f'<span><i class="scb-sw-{MAP_CLASS[label]}"></i>{label} {n}</span>' for label, n in counts.items())
+        + "</div>")
+    baseline_map(findings)
+    st.caption("Select a policy to see its requirement, what the scan found and how to fix it.")
 
-    st.subheader("Fix first", icon=":material/low_priority:")
+    st.subheader("Fix first", anchor=False)
     if failures:
         top = high_priority or failures
         st.caption("The highest-priority failures: required (SHALL) controls that the scan found not met."
                    if high_priority else "No required control failed; these recommended (SHOULD) controls did.")
-        with st.container(horizontal=True, gap="medium"):
-            for f in top[:FIX_FIRST]:
-                finding_card(f)
-        st.button(f"See all {len(failures)} findings", icon=":material/arrow_forward:", type="tertiary",
-                  on_click=goto, args=(TAB_FINDINGS,))
+        for f in top[:FIX_FIRST]:
+            worklist_row(f, "overview")
+        st.button(f"See all {len(failures)} findings", type="tertiary", on_click=goto, args=(TAB_FINDINGS,))
     else:
         st.success("Every assessed control passed.", icon=":material/verified:")
-
-    st.subheader("Posture by area", icon=":material/category:")
-    st.caption("Pass rate counts only the controls ScubaGear assessed. Areas with the most failures come first.")
-    st.dataframe(
-        area_rows(findings), hide_index=True,
-        column_config={
-            "Area": st.column_config.TextColumn(width="large"),
-            "Pass rate": st.column_config.ProgressColumn(format="%d%%", min_value=0, max_value=100, width="medium"),
-            "Passing": st.column_config.NumberColumn(width="small"),
-            "Failing": st.column_config.NumberColumn(width="small"),
-            "Not assessed": st.column_config.NumberColumn(width="small"),
-        })
 
     if unassessed:
         reasons = [not_assessed_reason(f.control_id, results_by_id) for f in unassessed]
@@ -630,7 +714,7 @@ with tab_overview:
         parts = [f"{cant_check} can't be checked by ScubaGear automatically" if cant_check else "",
                  f"{missing} {'is' if missing == 1 else 'are'} newer than ScubaGear "
                  f"{info.get('tool_version') or ''}".rstrip() if missing else ""]
-        st.subheader(f"Not assessed ({len(unassessed)})", icon=":material/help:")
+        st.subheader(f"Not assessed ({len(unassessed)})", anchor=False)
         st.caption("ScubaGear returned no pass or fail for these controls, so their status is unknown"
                    + (": " + " and ".join(p for p in parts if p) if any(parts) else "") + ". Check them by hand.")
         st.dataframe(
@@ -638,10 +722,11 @@ with tab_overview:
              for f, why in zip(unassessed, reasons)],
             hide_index=True,
             column_config={"Control": st.column_config.TextColumn(width=115),
+                           "Title": st.column_config.TextColumn(width="medium"),
                            "Obligation": st.column_config.TextColumn(width=95),
                            "Why": st.column_config.TextColumn(width="large")})
 
-# Findings: every failed control with its verified facts, filterable
+# Findings: every failed control as a worklist, filterable
 with tab_findings:
     if not failures:
         st.success("Every assessed control passed.", icon=":material/verified:")
@@ -655,14 +740,15 @@ with tab_findings:
         shown = [f for f in shown if area == "All areas" or f.group == area]
         st.caption(f"Showing {len(shown)} of {len(failures)} failed controls. Open one to see what the scan found "
                    "and how to fix it.")
-        for level, title in (("high", "High priority"), ("moderate", "Moderate priority")):
+        for level, title, explain in (("high", "High priority", "failed SHALL and SHALL NOT requirements"),
+                                      ("moderate", "Moderate priority", "ScubaGear warnings: failed SHOULD requirements")):
             group = [f for f in shown if f.priority == level]
             if group:
-                st.markdown(f"**{title}** ({len(group)})")
+                st.markdown(f"**{title} ({len(group)})**: {explain}")
                 for f in group:
-                    finding_details(f)
+                    worklist_row(f, "findings")
 
-    st.subheader("All controls", icon=":material/table_rows:")
+    st.subheader("All controls", anchor=False)
     with st.container(horizontal=True, vertical_alignment="bottom", gap="medium"):
         query = st.text_input("Search", placeholder="Control ID, title or area", type="search", live=True,
                               icon=":material/search:", key="controls_search", width=320)
@@ -682,57 +768,49 @@ with tab_findings:
                                     "Obligation": st.column_config.TextColumn(width=95),
                                     "Status": st.column_config.TextColumn(width=110)})
 
-# Ask the AI: the chat
+# Questions: a record of questions and answers, newest first
 with tab_chat:
-    with st.container(horizontal=True, vertical_alignment="center"):
-        st.caption(":material/auto_awesome: Answers are AI-generated and cite the verified results they rely on.",
-                   width="stretch")
-        st.button("Executive summary", icon=":material/summarize:", disabled=bool(problem), on_click=queue,
-                  args=("summary", "Give me an executive summary of our Entra ID security posture."))
-        st.button("New conversation", icon=":material/restart_alt:", type="tertiary", on_click=clear_conversation,
-                  disabled=not st.session_state.messages)
-    chat_box = st.container()   # the conversation, above the input box
-    typed = st.chat_input("AI is offline, see the sidebar" if problem else "Ask about your Entra ID security posture",
+    typed = st.chat_input("AI is offline, see the note above" if problem else "Ask about this scan",
                           submit_mode="disable", disabled=bool(problem))
+    with st.container(horizontal=True, vertical_alignment="center"):
+        st.caption("Answers are written by the AI from the verified results, and list the controls they rely on.",
+                   width="stretch")
+        st.button("Executive summary", disabled=bool(problem), on_click=queue,
+                  args=("summary", "Give me an executive summary of our Entra ID security posture."))
+        st.button("Clear questions", type="tertiary", on_click=clear_conversation,
+                  disabled=not st.session_state.messages)
+
     request = {"kind": "chat", "prompt": typed, "control_id": None} if typed else st.session_state.pending
     st.session_state.pending = None
+    if request:
+        history = chat_history()
+        user_msg = {"role": "user", "content": request["prompt"]}
+        try:
+            with st.spinner("Working on the answer…"):
+                reply = ask(assistant, request, history)
+            msg = {"role": "assistant", "content": reply["text"], "verified": reply["verified"],
+                   "unverified": reply["unverified_references"]}
+        except Exception as exc:
+            log.exception("AI request failed")
+            user_msg["failed"] = True
+            msg = {"role": "assistant", "content": friendly_error(exc), "error": True}
+        st.session_state.messages += [user_msg, msg]
 
-    with chat_box:
-        for msg in st.session_state.messages:
-            render_message(msg)
-
-        if not st.session_state.messages and not request:
-            with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
-                st.markdown("I answer questions about this tenant's SCuBA scan and point to the verified "
-                            "results behind every answer. Type a question below, or start with one of these:")
-                st.pills("Suggested questions", list(SUGGESTIONS), key="suggestion", on_change=pick_suggestion,
-                         label_visibility="collapsed", disabled=bool(problem))
-
-        if request:
-            history = chat_history()
-            user_msg = {"role": "user", "content": request["prompt"]}
-            st.session_state.messages.append(user_msg)
-            render_message(user_msg)
-
-            with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
-                try:
-                    with st.spinner("Analyzing your assessment…"):
-                        reply = ask(assistant, request, history)
-                    msg = {"role": "assistant", "content": reply["text"], "verified": reply["verified"],
-                           "unverified": reply["unverified_references"]}
-                except Exception as exc:
-                    log.exception("AI request failed")
-                    user_msg["failed"] = True
-                    msg = {"role": "assistant", "content": friendly_error(exc), "error": True}
-                render_reply(msg)
-            st.session_state.messages.append(msg)
+    msgs = st.session_state.messages
+    exchanges = [(msgs[i]["content"], msgs[i + 1] if i + 1 < len(msgs) else None) for i in range(0, len(msgs), 2)]
+    if not exchanges:
+        st.markdown("Ask anything about this scan. For example:")
+        for q in EXAMPLE_QUESTIONS:
+            st.button(q, key=f"example_{q}", type="tertiary", disabled=bool(problem), on_click=queue, args=("chat", q))
+    for n, (question, answer) in enumerate(reversed(exchanges)):
+        render_exchange(question, answer, n)
 
 # Report: the AI-written PDF
 with tab_report:
-    st.subheader("Compliance report", icon=":material/picture_as_pdf:")
+    st.subheader("Compliance report", anchor=False)
     st.markdown("A PDF for security and compliance stakeholders, built from this scan:")
     st.markdown(
-        "- **Cover:** tenant, scan details and the pass / fail counts\n"
+        "- **Cover:** tenant, scan details and the pass and fail counts\n"
         "- **Executive summary** and **recommended next steps** (AI analysis)\n"
         "- **Findings:** one card per failed control with the verified requirement and scan result, plus the "
         "AI's explanation and fix steps\n"
@@ -747,12 +825,19 @@ with report_slot:
     if report:
         st.download_button("Download PDF", data=report["pdf"], file_name=report["file_name"],
                            mime="application/pdf", icon=":material/download:", type="primary", on_click="ignore")
-        st.caption(f"{report['file_name']} · generated {report['generated']:%d %b %Y, %H:%M UTC}. "
+        st.caption(f"{report['file_name']}, generated {report['generated']:%d %b %Y, %H:%M UTC}. "
                    "AI-written; review it before sharing.")
     if st.session_state.report_error:
         st.error(st.session_state.report_error, icon=":material/error:")
     if problem:
-        st.caption("Generating a report needs the AI; see the sidebar.")
-    st.button("Regenerate report" if report else "Generate PDF report", icon=":material/picture_as_pdf:",
+        st.caption("Generating a report needs the AI; see the note above.")
+    st.button("Regenerate report" if report else "Generate PDF report",
               type="secondary" if report else "primary", disabled=bool(problem), on_click=request_report,
               help="The AI writes the analysis; the facts come straight from the scan.")
+
+# A policy selected on the map or in an answer opens its details over the page.
+if st.session_state.get("open_control"):
+    chosen = next((f for f in findings if f.control_id == st.session_state.open_control), None)
+    st.session_state.open_control = None
+    if chosen:
+        control_dialog(chosen)
