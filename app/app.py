@@ -46,7 +46,14 @@ STATUS_BADGE = {  # status -> (label, color, icon)
     "FAIL": ("Fail", "red", ":material/cancel:"),
     "NOT ASSESSED": ("Not assessed", "gray", ":material/help:"),
 }
+WARNING_BADGE = ("Warning", "orange", ":material/warning:")   # ScubaGear's word for a failed SHOULD
 PRIORITY_BADGE = {"high": ("High priority", "red"), "moderate": ("Moderate priority", "orange")}
+
+TAB_OVERVIEW = ":material/dashboard: Overview"
+TAB_FINDINGS = ":material/fact_check: Findings"
+TAB_CHAT = ":material/forum: Ask the AI"
+TAB_REPORT = ":material/picture_as_pdf: Report"
+FIX_FIRST = 3   # high-priority failures shown on the overview
 
 SUGGESTIONS = {
     ":material/low_priority: What should we fix first?": "What should we fix first, and why?",
@@ -250,16 +257,87 @@ def report_file_name(tenant, generated):
 
 
 # --- Rendering ----------------------------------------------------------------
-def status_badge(status, label=None, help=None):
-    text, color, icon = STATUS_BADGE.get(status, (status, "gray", None))
+def result_badge(status, scuba_result=""):
+    """(label, color, icon) for a control's result. The AI layer counts ScubaGear's Warning (a failed
+    SHOULD) as FAIL; the page shows it as Warning, as ScubaGear and the PDF report do."""
+    if status == "FAIL" and (scuba_result or "").lower() == "warning":
+        return WARNING_BADGE
+    return STATUS_BADGE.get(status, (status, "gray", None))
+
+
+def status_badge(status, label=None, help=None, scuba_result=""):
+    text, color, icon = result_badge(status, scuba_result)
     st.badge(label or text, color=color, icon=icon, help=help)
+
+
+def goto(tab):
+    st.session_state.tab = tab
+
+
+def ask_ai_button(f, key_prefix):
+    st.button("Ask AI", key=f"{key_prefix}_{f.control_id}", icon=":material/auto_awesome:", type="tertiary",
+              disabled=bool(problem), on_click=queue,
+              args=("explain", f"Explain `{f.control_id}`: what it requires, what the scan found, and how to "
+                               "fix it.", f.control_id))
+
+
+def area_rows(findings):
+    """One row per catalog area: pass rate over the assessed controls, and the counts behind it.
+    Areas with the most failures come first."""
+    areas = {}
+    for f in findings:
+        counts = areas.setdefault(f.group or "Other", {"PASS": 0, "FAIL": 0, "NOT ASSESSED": 0})
+        counts[f.status] = counts.get(f.status, 0) + 1
+    rows = []
+    for area, c in areas.items():
+        assessed = c["PASS"] + c["FAIL"]
+        rows.append({"Area": area, "Pass rate": round(100 * c["PASS"] / assessed) if assessed else None,
+                     "Passing": c["PASS"], "Failing": c["FAIL"], "Not assessed": c["NOT ASSESSED"]})
+    return sorted(rows, key=lambda r: -r["Failing"])
+
+
+def finding_card(f):
+    """One failed control on the overview: title, tags, requirement and an Ask AI button."""
+    with st.container(border=True):
+        st.markdown(f"**{f.control_id}** · {f.title}")
+        st.caption(f.requirement)
+        with st.container(horizontal=True, vertical_alignment="center", horizontal_alignment="distribute"):
+            with st.container(horizontal=True, gap="xsmall", width="content"):
+                text, color = PRIORITY_BADGE[f.priority]
+                st.badge(text, color=color)
+                status_badge(f.status, scuba_result=f.scuba_result)
+            ask_ai_button(f, "overview")
+
+
+def finding_details(f):
+    """One failed control on the Findings tab, with every verified fact behind it."""
+    icon = ":material/error:" if f.priority == "high" else ":material/warning:"
+    with st.expander(f"**{f.control_id}** · {f.title}", icon=icon):
+        with st.container(horizontal=True, gap="xsmall"):
+            text, color = PRIORITY_BADGE[f.priority]
+            st.badge(text, color=color)
+            label, _, _ = result_badge(f.status, f.scuba_result)
+            status_badge(f.status, label=f"ScubaGear: {label}", scuba_result=f.scuba_result)
+            st.badge(f.obligation, color="gray")
+            st.badge(f.group, color="gray", icon=":material/category:")
+        st.markdown(f"**Requirement:** {f.requirement}")
+        st.markdown(f"**Scan result:** {f.finding or 'No details recorded.'}")
+        if f.evidence:
+            st.caption(f":material/description: {f.evidence}")
+        if f.remediation:
+            st.markdown("**How to fix** (SCuBA guidance)")
+            st.markdown(f.remediation)
+        if f.nist:
+            st.caption("Related NIST SP 800-53 controls: " + ", ".join(n.replace("NIST SP 800-53 Rev 5 ", "")
+                                                                     for n in f.nist))
+        ask_ai_button(f, "findings")
 
 
 def render_fact(f):
     """One verified record, straight from OSCAL."""
     st.markdown(f"**{f['control_id']}** · {f['title']}")
     with st.container(horizontal=True, gap="xsmall"):
-        status_badge(f["status"])
+        status_badge(f["status"], scuba_result=f.get("scuba_result"))
         st.badge(f["obligation"], color="gray")
         if f.get("priority") in PRIORITY_BADGE:
             text, color = PRIORITY_BADGE[f["priority"]]
@@ -286,7 +364,9 @@ def render_reply(msg):
     if msg["verified"]:
         with st.container(horizontal=True, gap="xsmall"):
             for f in msg["verified"]:
-                status_badge(f["status"], label=f["control_id"], help=f"{f['title']}: {f['status'].lower()}")
+                result = result_badge(f["status"], f.get("scuba_result"))[0].lower()
+                status_badge(f["status"], label=f["control_id"], help=f"{f['title']}: {result}",
+                             scuba_result=f.get("scuba_result"))
         n = len(msg["verified"])
         with st.expander(f"Verified facts from OSCAL ({n} control{'s' if n != 1 else ''})", icon=":material/verified:"):
             for i, f in enumerate(msg["verified"]):
@@ -322,7 +402,9 @@ if "upload" not in st.session_state:
 
 
 def queue(kind, prompt, control_id=None):
+    """Send a request to the AI on the next run, and show the chat so the answer is visible."""
     st.session_state.pending = {"kind": kind, "prompt": prompt, "control_id": control_id}
+    goto(TAB_CHAT)
 
 
 def pick_suggestion():
@@ -354,7 +436,8 @@ def clear_scan():
 
 
 # --- Page ---------------------------------------------------------------------
-st.set_page_config(page_title="SCuBA posture assistant", page_icon=ASSISTANT_AVATAR, layout="centered")
+st.set_page_config(page_title="SCuBA posture assistant", page_icon=ASSISTANT_AVATAR,
+                   layout="wide" if st.session_state.upload else "centered")   # the dashboard uses the full width
 
 problem = ai_problem()
 
@@ -397,6 +480,8 @@ if st.session_state.upload is None:
 assistant = st.session_state.upload["assistant"]
 findings, info, summary = assistant.findings, assistant.info, assistant.summary
 failures = prioritized_failures(findings)
+high_priority = [f for f in failures if f.priority == "high"]
+warnings = sum(result_badge(f.status, f.scuba_result) == WARNING_BADGE for f in failures)
 if st.session_state.flash:
     st.toast(st.session_state.flash, icon=":material/check_circle:")
     st.session_state.flash = None
@@ -413,86 +498,138 @@ with st.sidebar:
     )
     st.button("Upload a different scan", icon=":material/upload:", width="stretch", on_click=clear_scan)
 
-    st.space("small")
-    st.markdown("**Actions**")
-    st.button("Executive summary", icon=":material/summarize:", width="stretch", disabled=bool(problem),
-              on_click=queue, args=("summary", "Give me an executive summary of our Entra ID security posture."))
-    st.button("New conversation", icon=":material/restart_alt:", type="tertiary", on_click=clear_conversation,
-              disabled=not st.session_state.messages)
-
-    st.space("small")
-    st.markdown("**Compliance report**")
-    report_slot = st.container()  # filled at the end of the script, so the page renders before the slow AI call
-
 st.title("SCuBA posture assistant", icon=ASSISTANT_AVATAR)
-st.caption("Ask about your tenant's CISA SCuBA assessment. Answers are AI-generated and cite the "
-           "verified OSCAL results they rely on.")
+st.caption(f"ScubaGear scan of {info.get('tenant') or 'your tenant'}, checked against the CISA SCuBA baseline for "
+           "Microsoft Entra ID. Statuses come from the scan; anything the AI writes is labelled as AI analysis.")
 
-with st.container(horizontal=True):
-    st.metric("Passing", f"{summary['passed']} of {summary['assessed']}", icon=":material/check_circle:",
-              border=True, help="Assessed controls that meet the SCuBA requirement")
-    st.metric("Failing", summary["failed"], icon=":material/cancel:", border=True)
-    st.metric("High priority", sum(f.priority == "high" for f in failures), icon=":material/priority_high:",
-              border=True, help="Failed SHALL and SHALL NOT requirements")
-    st.metric("Not assessed", summary["not_assessed"], icon=":material/help:", border=True)
+tab_overview, tab_findings, tab_chat, tab_report = st.tabs(
+    [TAB_OVERVIEW, TAB_FINDINGS, TAB_CHAT, TAB_REPORT], key="tab", on_change="rerun")
 
-label = (f"{len(failures)} control{'s' if len(failures) != 1 else ''} need attention" if failures
-         else "All assessed controls pass")
-with st.expander(label, icon=":material/fact_check:"):
-    for f in failures:
-        with st.container(border=True):
-            with st.container(horizontal=True, vertical_alignment="center", gap="small"):
-                st.markdown(f"**{f.control_id}** · {f.title}", width="stretch")
-                text, color = PRIORITY_BADGE[f.priority]
-                st.badge(text, color=color)
-                st.button("Ask AI", key=f"explain_{f.control_id}", icon=":material/auto_awesome:",
-                          type="tertiary", disabled=bool(problem), on_click=queue,
-                          args=("explain", f"Explain `{f.control_id}`: what it requires, what the scan "
-                                           "found, and how to fix it.", f.control_id))
-            st.caption(f.requirement)
-    st.markdown("**All controls**")
+# Overview: the headline numbers, where the problems are, and what to fix first
+with tab_overview:
+    with st.container(horizontal=True):
+        st.metric("Passing", f"{summary['passed']} of {summary['assessed']}", icon=":material/check_circle:",
+                  border=True, help="Assessed controls that meet the SCuBA requirement")
+        st.metric("Failing", summary["failed"], icon=":material/cancel:", border=True,
+                  help=f"{summary['failed'] - warnings} failed SHALL / SHALL NOT requirements and {warnings} "
+                       "ScubaGear warnings (failed SHOULD requirements)")
+        st.metric("High priority", len(high_priority), icon=":material/priority_high:", border=True,
+                  help="Failed SHALL and SHALL NOT requirements")
+        st.metric("Not assessed", summary["not_assessed"], icon=":material/help:", border=True,
+                  help="Controls ScubaGear returned no result for")
+
+    st.subheader("Fix first", icon=":material/low_priority:")
+    if failures:
+        top = high_priority or failures
+        st.caption("The highest-priority failures: required (SHALL) controls that the scan found not met."
+                   if high_priority else "No required control failed; these recommended (SHOULD) controls did.")
+        with st.container(horizontal=True, gap="medium"):
+            for f in top[:FIX_FIRST]:
+                finding_card(f)
+        st.button(f"See all {len(failures)} findings", icon=":material/arrow_forward:", type="tertiary",
+                  on_click=goto, args=(TAB_FINDINGS,))
+    else:
+        st.success("Every assessed control passed.", icon=":material/verified:")
+
+    st.subheader("Posture by area", icon=":material/category:")
+    st.caption("Pass rate counts only the controls ScubaGear assessed. Areas with the most failures come first.")
     st.dataframe(
-        [{"Control": f.control_id, "Title": f.title, "Obligation": f.obligation,
-          "Status": STATUS_BADGE.get(f.status, (f.status,))[0]} for f in findings],
+        area_rows(findings), hide_index=True,
+        column_config={
+            "Area": st.column_config.TextColumn(width="large"),
+            "Pass rate": st.column_config.ProgressColumn(format="%d%%", min_value=0, max_value=100, width="medium"),
+            "Passing": st.column_config.NumberColumn(width="small"),
+            "Failing": st.column_config.NumberColumn(width="small"),
+            "Not assessed": st.column_config.NumberColumn(width="small"),
+        })
+
+# Findings: every failed control with its verified facts, filterable
+with tab_findings:
+    if not failures:
+        st.success("Every assessed control passed.", icon=":material/verified:")
+    else:
+        with st.container(horizontal=True, vertical_alignment="bottom", gap="medium"):
+            priority = st.segmented_control("Priority", ["All", "High", "Moderate"], default="All", required=True,
+                                            key="filter_priority")
+            area = st.selectbox("Area", ["All areas", *sorted({f.group for f in failures})], key="filter_area",
+                                width=320)
+        shown = [f for f in failures if priority in (None, "All") or f.priority == priority.lower()]
+        shown = [f for f in shown if area == "All areas" or f.group == area]
+        st.caption(f"Showing {len(shown)} of {len(failures)} failed controls. Open one to see what the scan found "
+                   "and how to fix it.")
+        for level, title in (("high", "High priority"), ("moderate", "Moderate priority")):
+            group = [f for f in shown if f.priority == level]
+            if group:
+                st.markdown(f"**{title}** ({len(group)})")
+                for f in group:
+                    finding_details(f)
+
+    st.subheader("All controls", icon=":material/table_rows:")
+    st.dataframe(
+        [{"Control": f.control_id, "Title": f.title, "Area": f.group, "Obligation": f.obligation,
+          "Status": result_badge(f.status, f.scuba_result)[0]} for f in findings],
         hide_index=True,
         column_config={"Control": st.column_config.TextColumn(width="small"),
                        "Obligation": st.column_config.TextColumn(width="small"),
                        "Status": st.column_config.TextColumn(width="small")},
     )
 
-typed = st.chat_input("AI is offline, see the sidebar" if problem else "Ask about your Entra ID security posture",
-                      submit_mode="disable", disabled=bool(problem))
-request = {"kind": "chat", "prompt": typed, "control_id": None} if typed else st.session_state.pending
-st.session_state.pending = None
+# Ask the AI: the chat
+with tab_chat:
+    with st.container(horizontal=True, vertical_alignment="center"):
+        st.caption(":material/auto_awesome: Answers are AI-generated and cite the verified results they rely on.",
+                   width="stretch")
+        st.button("Executive summary", icon=":material/summarize:", disabled=bool(problem), on_click=queue,
+                  args=("summary", "Give me an executive summary of our Entra ID security posture."))
+        st.button("New conversation", icon=":material/restart_alt:", type="tertiary", on_click=clear_conversation,
+                  disabled=not st.session_state.messages)
+    chat_box = st.container()   # the conversation, above the input box
+    typed = st.chat_input("AI is offline, see the sidebar" if problem else "Ask about your Entra ID security posture",
+                          submit_mode="disable", disabled=bool(problem))
+    request = {"kind": "chat", "prompt": typed, "control_id": None} if typed else st.session_state.pending
+    st.session_state.pending = None
 
-for msg in st.session_state.messages:
-    render_message(msg)
+    with chat_box:
+        for msg in st.session_state.messages:
+            render_message(msg)
 
-if not st.session_state.messages and not request:
-    with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
-        st.markdown("I answer questions about this tenant's SCuBA scan and point to the verified "
-                    "results behind every answer. Type a question below, or start with one of these:")
-        st.pills("Suggested questions", list(SUGGESTIONS), key="suggestion", on_change=pick_suggestion,
-                 label_visibility="collapsed", disabled=bool(problem))
+        if not st.session_state.messages and not request:
+            with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
+                st.markdown("I answer questions about this tenant's SCuBA scan and point to the verified "
+                            "results behind every answer. Type a question below, or start with one of these:")
+                st.pills("Suggested questions", list(SUGGESTIONS), key="suggestion", on_change=pick_suggestion,
+                         label_visibility="collapsed", disabled=bool(problem))
 
-if request:
-    history = chat_history()
-    user_msg = {"role": "user", "content": request["prompt"]}
-    st.session_state.messages.append(user_msg)
-    render_message(user_msg)
+        if request:
+            history = chat_history()
+            user_msg = {"role": "user", "content": request["prompt"]}
+            st.session_state.messages.append(user_msg)
+            render_message(user_msg)
 
-    with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
-        try:
-            with st.spinner("Analyzing your assessment…"):
-                reply = ask(assistant, request, history)
-            msg = {"role": "assistant", "content": reply["text"], "verified": reply["verified"],
-                   "unverified": reply["unverified_references"]}
-        except Exception as exc:
-            log.exception("AI request failed")
-            user_msg["failed"] = True
-            msg = {"role": "assistant", "content": friendly_error(exc), "error": True}
-        render_reply(msg)
-    st.session_state.messages.append(msg)
+            with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
+                try:
+                    with st.spinner("Analyzing your assessment…"):
+                        reply = ask(assistant, request, history)
+                    msg = {"role": "assistant", "content": reply["text"], "verified": reply["verified"],
+                           "unverified": reply["unverified_references"]}
+                except Exception as exc:
+                    log.exception("AI request failed")
+                    user_msg["failed"] = True
+                    msg = {"role": "assistant", "content": friendly_error(exc), "error": True}
+                render_reply(msg)
+            st.session_state.messages.append(msg)
+
+# Report: the AI-written PDF
+with tab_report:
+    st.subheader("Compliance report", icon=":material/picture_as_pdf:")
+    st.markdown("A PDF for security and compliance stakeholders, built from this scan:")
+    st.markdown(
+        "- **Cover:** tenant, scan details and the pass / fail counts\n"
+        "- **Executive summary** and **recommended next steps** (AI analysis)\n"
+        "- **Findings:** one card per failed control with the verified requirement and scan result, plus the "
+        "AI's explanation and fix steps\n"
+        "- **Controls that passed**, **not assessed**, and an **appendix** of every control (verified results)")
+    report_slot = st.container()   # filled at the end of the script, so the page renders before the slow AI call
 
 with report_slot:
     if st.session_state.report_requested and not problem:
@@ -501,11 +638,13 @@ with report_slot:
     report = st.session_state.report
     if report:
         st.download_button("Download PDF", data=report["pdf"], file_name=report["file_name"],
-                           mime="application/pdf", icon=":material/download:", type="primary",
-                           width="stretch", on_click="ignore")
-        st.caption(f"Generated {report['generated']:%d %b %Y, %H:%M UTC}. AI-written; review it before sharing.")
+                           mime="application/pdf", icon=":material/download:", type="primary", on_click="ignore")
+        st.caption(f"{report['file_name']} · generated {report['generated']:%d %b %Y, %H:%M UTC}. "
+                   "AI-written; review it before sharing.")
     if st.session_state.report_error:
-        st.error(st.session_state.report_error.replace("`", ""), icon=":material/error:")
+        st.error(st.session_state.report_error, icon=":material/error:")
+    if problem:
+        st.caption("Generating a report needs the AI; see the sidebar.")
     st.button("Regenerate report" if report else "Generate PDF report", icon=":material/picture_as_pdf:",
-              width="stretch", disabled=bool(problem), on_click=request_report,
-              help="The AI writes a compliance report from the verified scan results, delivered as a PDF.")
+              type="secondary" if report else "primary", disabled=bool(problem), on_click=request_report,
+              help="The AI writes the analysis; the facts come straight from the scan.")
