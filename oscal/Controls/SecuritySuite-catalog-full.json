@@ -1,0 +1,1036 @@
+{
+  "catalog": {
+    "uuid": "18a5cbd9-a2e1-5260-aaca-c4a7b7fced05",
+    "metadata": {
+      "title": "CISA SCuBA Security Suite (MS.SECURITYSUITE) Baseline - all policies",
+      "last-modified": "2026-09-23T00:00:00+00:00",
+      "version": "0.3.0",
+      "oscal-version": "1.1.2"
+    },
+    "groups": [
+      {
+        "id": "ms.securitysuite.1",
+        "title": "Malware Protection",
+        "controls": [
+          {
+            "id": "ms.securitysuite.1.1v1",
+            "title": "Emails with click-to-run file attachments SHALL be blocked, including at a minimum .exe, .cmd, and .vbe files.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.1.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-3"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.1.1v1_smt",
+                "name": "statement",
+                "prose": "Emails with click-to-run file attachments SHALL be blocked, including at a minimum .exe, .cmd, and .vbe files."
+              },
+              {
+                "id": "ms.securitysuite.1.1v1_gdn",
+                "name": "guidance",
+                "prose": "Malicious attachments often take the form of click-to-run files."
+              },
+              {
+                "id": "ms.securitysuite.1.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "Both the standard and strict preset policies meet this baseline policy requirement,\nso no further actions are needed for users added to those policies. See\n[Adding Users to the Preset Security Policies](#appendix-a-adding-users-to-the-preset-security-policies)\nfor instructions on adding users to these policies.\n\nAs the steps for MS.SECURITYSUITE.1.1v1 and MS.SECURITYSUITE.1.2v1 share many steps in common,\nsteps for both policies are included in this section. Steps that do not strictly apply to\nMS.SECURITYSUITE.1.1v1 are followed by the applicable SCuBA policy in parenthesis.\n\nFor users not added to the standard or strict preset policies:\n1.  Sign in to **Microsoft 365 Defender**.\n2.  Under **Email & collaboration**, select **Policies & rules**.\n3.  Select **Threat policies**.\n4.  Under **Policies**, select **Anti-malware**.\n5.  If modifying an existing policy:\n    1. Click the name of the policy from the policy list to open the policy summary.\n    2. Click **Edit user and domains**. _Note:_ the **Default (default)** policy applies to all users, so skip this step if modifying the default policy.\n        - Add users, groups, and domains as needed. To make the policy apply to all users, under\n          **Domains**, enter all the tenant domains.\n        - (Optional) Under **Exclude these users, groups, and domains**, add **Users** and **Groups**\n          to be exempted from this policy.\n        - Click **Save**.\n    3. Click **Edit protection settings**\n    4. Check **Enable zero-hour auto purge for malware (Recommended)**. (_MS.SECURITYSUITE.1.2v1_)\n    5. Check **Enable the common attachments filter**.\n    6. Click **Customize file types** and ensure that at a minimum .exe, .cmd, and .vbe are selected.\n    7. Click **Save**.\n6.  If creating a new policy:\n    1. Click **Create**.\n    2. After naming the policy, click **Next**.\n    3. Add users, groups, and domains as needed. To make the policy apply to all users, under\n       **Domains**, enter all the tenant domains.\n    4. (Optional) Under **Exclude these users, groups, and domains**, add **Users** and **Groups**\n       to be exempted from this policy.\n    5. Click **Next**.\n    6. Check **Enable zero-hour auto purge for malware (Recommended)**. (_MS.SECURITYSUITE.1.2v1_)\n    7. Check **Enable the common attachments filter**.\n    8. Click **Select file types** and ensure that at a minimum .exe, .cmd, and .vbe are selected, then click **Done**.\n    9. Click **Next** then **Submit**."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.1.2v1",
+            "title": "Email scanning SHALL be capable of reviewing emails after delivery.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.1.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-3"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.1.2v1_smt",
+                "name": "statement",
+                "prose": "Email scanning SHALL be capable of reviewing emails after delivery."
+              },
+              {
+                "id": "ms.securitysuite.1.2v1_gdn",
+                "name": "guidance",
+                "prose": "As known malware signatures are updated, it is possible for an email to be retroactively identified as containing malware after delivery. By scanning emails, the number of malware-infected in users' mailboxes can be reduced."
+              },
+              {
+                "id": "ms.securitysuite.1.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "Both the standard and strict preset policies meet this baseline policy requirement,\nso no further actions are needed for users added to those policies. See\n[Adding Users to the Preset Security Policies](#appendix-a-adding-users-to-the-preset-security-policies)\nfor instructions on adding users to these policies.\n\nFor users not added to the standard or strict preset policies, see [MS.SECURITYSUITE.1.2v1 Instructions](#mssecuritysuite12v1-instructions)."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.1.3v1",
+            "title": "Emails identified as containing malware SHALL be quarantined or dropped.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.1.3v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-3"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.1.3v1_smt",
+                "name": "statement",
+                "prose": "Emails identified as containing malware SHALL be quarantined or dropped."
+              },
+              {
+                "id": "ms.securitysuite.1.3v1_gdn",
+                "name": "guidance",
+                "prose": "Email can be used as a mechanism for delivering malware."
+              },
+              {
+                "id": "ms.securitysuite.1.3v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "Both the standard and strict preset policies meet this baseline policy requirement,\nso no further actions are needed for users added to those policies. See\n[Adding Users to the Preset Security Policies](#appendix-a-adding-users-to-the-preset-security-policies)\nfor instructions on adding users to these policies.\n\nFor users not added to the standard or strict preset policies:\n1.  Sign in to **Microsoft 365 Defender**.\n2.  Under **Email & collaboration**, select **Policies & rules**.\n3.  Select **Threat policies**.\n4.  Under **Policies**, select **Safe Attachments**.\n5.  If modifying an existing policy:\n    1. Click the name of the policy from the policy list to open the policy summary.\n    2. Click **Edit user and domains**. _Note:_ the **Default (default)** policy applies to all users, so skip this step if modifying the default policy.\n        - Add users, groups, and domains as needed. To make the policy apply to all users, under\n          **Domains**, enter all the tenant domains.\n        - (Optional) Under **Exclude these users, groups, and domains**, add **Users** and **Groups**\n          to be exempted from this policy.\n        - Click **Save**.\n    3. Click **Edit settings**\n    4. Under **Safe Attachments unknown malware response**, select **Block** or **Dynamic Delivery**.\n    5. Click **Save**.\n6.  If creating a new policy:\n    1. Click **Create**.\n    2. After naming the policy, click **Next**.\n    3. Add users, groups, and domains as needed. To make the policy apply to all users, under\n       **Domains**, enter all the tenant domains.\n    4. (Optional) Under **Exclude these users, groups, and domains**, add **Users** and **Groups**\n       to be exempted from this policy.\n    5. Click **Next**.\n    4. Under **Safe Attachments unknown malware response**, select **Block** or **Dynamic Delivery**.\n    5. Click **Next** then **Submit**."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.1.4v1",
+            "title": "SharePoint, OneDrive, and Teams message attachments SHOULD be scanned for malware.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.1.4v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-3"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.1.4v1_smt",
+                "name": "statement",
+                "prose": "SharePoint, OneDrive, and Teams message attachments SHOULD be scanned for malware."
+              },
+              {
+                "id": "ms.securitysuite.1.4v1_gdn",
+                "name": "guidance",
+                "prose": "Files shared through Teams or hosted on SharePoint/OneDrive can be used as a mechanism for delivering malware. In many cases, malware can be detected through scanning, reducing the risk for end users."
+              },
+              {
+                "id": "ms.securitysuite.1.4v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "This baseline policy is _not_ covered by the preset policies, so these steps\nneed to be taken even if the standard or strict policies are used.\n\n1.  Sign in to **Microsoft 365 Defender**.\n\n2.  Under **Email & collaboration**, select **Policies & rules**.\n\n3.  Select **Threat policies**.\n\n4.  Under **Policies**, select **Safe Attachments**.\n\n5.  Select **Global settings**.\n\n6.  Toggle the **Turn on Defender for Office 365 for SharePoint, OneDrive, and Microsoft Teams**\n    slider to **On**.\n\n7. Click **Save**."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.securitysuite.2",
+        "title": "Impersonation Protection",
+        "controls": [
+          {
+            "id": "ms.securitysuite.2.1v1",
+            "title": "User impersonation protection SHOULD be enabled for sensitive accounts.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.2.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-8"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.2.1v1_smt",
+                "name": "statement",
+                "prose": "User impersonation protection SHOULD be enabled for sensitive accounts."
+              },
+              {
+                "id": "ms.securitysuite.2.1v1_gdn",
+                "name": "guidance",
+                "prose": "User impersonation, especially of users seen as authority figures,"
+              },
+              {
+                "id": "ms.securitysuite.2.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Sign in to **Microsoft 365 Defender**.\n2.  Under **Email & collaboration**, select **Policies & rules**.\n3.  Select **Threat policies**.\n4.  Under **Policies**, select **Anti-phishing**.\n5.  Select the **Office365 AntiPhish Default (Default)** policy.\n6.  Click **Edit protection settings**.\n7.  Under **Impersonation**, select **Enable users to protect**.\n8.  Click **Manage [x] sender(s)**.\n9.  On the **Manage senders for impersonation protection** page, click **Add user**\nthen add a name and valid email address for each sensitive account and click **Add** after each.\n10. Click **Done** then **Save**.\n11. Click **Edit actions**.\n12. Under **If a message is detected as user impersonation**, select one of the following:\n    - **Redirect the message to other email addresses**\n    - **Move the message to the recipients' Junk Email folders**\n    - **Quarantine the message**\n    - **Delete the message before it's delivered**\n13. Click **Save**.\n\n**Note**: In order for ScubaGear to evaluate MS.SECURITYSUITE.2.1v1, it needs to know which users are considered sensitive. To configure this, use the `SensitiveUsers` config file option. If this config file option is not used or is empty, ScubaGear will report this policy as non-compliant. See [Security Suite Configuration](/docs/configuration/configuration.md#security-suite-configuration) for more details."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.2.2v1",
+            "title": "Domain impersonation protection SHOULD be enabled for domains owned by the agency.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.2.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-8"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.2.2v1_smt",
+                "name": "statement",
+                "prose": "Domain impersonation protection SHOULD be enabled for domains owned by the agency."
+              },
+              {
+                "id": "ms.securitysuite.2.2v1_gdn",
+                "name": "guidance",
+                "prose": "Configuring domain impersonation protection for agency-owned domains"
+              },
+              {
+                "id": "ms.securitysuite.2.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Sign in to **Microsoft 365 Defender**.\n2.  Under **Email & collaboration**, select **Policies & rules**.\n3.  Select **Threat policies**.\n4.  Under **Policies**, select **Anti-phishing**.\n5.  Select the **Office365 AntiPhish Default (Default)** policy.\n6.  Click **Edit protection settings**.\n7.  Under **Impersonation**, check **Enable domains to protect** and **Include domains I own**.\n8.  Click **Save**.\n9. Click **Edit actions**.\n10. Under **If a message is detected as domain impersonation**, select one of the following:\n    - **Redirect the message to other email addresses**\n    - **Move the message to the recipients' Junk Email folders**\n    - **Quarantine the message**\n    - **Delete the message before it's delivered**\n11.  Click **Done** then **Save**."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.2.3v1",
+            "title": "Domain impersonation protection SHOULD be added for key suppliers and partners.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.2.3v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-8"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.2.3v1_smt",
+                "name": "statement",
+                "prose": "Domain impersonation protection SHOULD be added for key suppliers and partners."
+              },
+              {
+                "id": "ms.securitysuite.2.3v1_gdn",
+                "name": "guidance",
+                "prose": "Configuring domain impersonation protection for domains owned by important partners reduces the risk of a user being deceived by a look-alike domain."
+              },
+              {
+                "id": "ms.securitysuite.2.3v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Sign in to **Microsoft 365 Defender**.\n2.  Under **Email & collaboration**, select **Policies & rules**.\n3.  Select **Threat policies**.\n4.  Under **Policies**, select **Anti-phishing**.\n5.  Select the **Office365 AntiPhish Default (Default)** policy.\n6.  Click **Edit protection settings**.\n7.  Under **Impersonation**, check **Enable domains to protect** and **Include custom domains**.\n8.  Click **Manage [x] custom domain(s)**.\n9.  On the **Manage custom domains for impersonation protection** page, click **Add domain**.\n10. Under **Domain**, enter each partner domain, then click **Add domains**.\n11. Click **Done** then **Save**.\n12. Click **Edit actions**.\n13. Under **If a message is detected as domain impersonation**, select one of the following:\n    - **Redirect the message to other email addresses**\n    - **Move the message to the recipients' Junk Email folders**\n    - **Quarantine the message**\n    - **Delete the message before it's delivered**\n14. Click **Save**.\n\n**Note**: In order for ScubaGear to evaluate MS.SECURITYSUITE.2.3v1, it needs to know which domains should be protected. To configure this, use the `PartnerDomains` config file option. If this config file option is not used or is empty, ScubaGear will report this policy as non-compliant. See [Security Suite Configuration](/docs/configuration/configuration.md#security-suite-configuration) for more details."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.2.4v1",
+            "title": "User warnings, comparable to the user safety tips included with EOP, SHOULD be displayed.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.2.4v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#at-2",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AT-2b"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-8"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.2.4v1_smt",
+                "name": "statement",
+                "prose": "User warnings, comparable to the user safety tips included with EOP, SHOULD be displayed."
+              },
+              {
+                "id": "ms.securitysuite.2.4v1_gdn",
+                "name": "guidance",
+                "prose": "Many tasks are better suited for automated processes, such as identifying"
+              },
+              {
+                "id": "ms.securitysuite.2.4v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Sign in to **Microsoft 365 Defender**.\n2.  Under **Email & collaboration**, select **Policies & rules**.\n3.  Select **Threat policies**.\n4.  Under **Policies**, select **Anti-phishing**.\n5.  Select the **Office365 AntiPhish Default (Default)** policy.\n6.  Click **Edit actions**.\n7.  Under **Safety tips & indicators**, ensure each safety tip and indicator is enabled.\n8.  Click **Save**."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.securitysuite.3",
+        "title": "Data Loss Prevention",
+        "controls": [
+          {
+            "id": "ms.securitysuite.3.1v1",
+            "title": "A DLP policy SHALL be configured to protect PII and sensitive information, as defined by the agency, blocking at a minimum: credit card numbers, U.S. Individual Taxpayer Identification Numbers (ITIN), and U.S. Social Security numbers (SSN).",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.3.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-7.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-7(10)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.3.1v1_smt",
+                "name": "statement",
+                "prose": "A DLP policy SHALL be configured to protect PII and sensitive information, as defined by the agency, blocking at a minimum: credit card numbers, U.S. Individual Taxpayer Identification Numbers (ITIN), and U.S. Social Security numbers (SSN)."
+              },
+              {
+                "id": "ms.securitysuite.3.1v1_gdn",
+                "name": "guidance",
+                "prose": "Users may inadvertently share sensitive information with"
+              },
+              {
+                "id": "ms.securitysuite.3.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "DLP is _not_ covered by the preset policies, so these steps need to be taken even if the standard\nor strict policies are used.\n\nAs the steps for MS.SECURITYSUITE.3.1v1, MS.SECURITYSUITE.3.2v1, MS.SECURITYSUITE.3.3v1, and\nMS.SECURITYSUITE.3.4v1 share many steps in common, steps for all these policies are included in\nthis section. Steps that do not strictly apply to MS.SECURITYSUITE.3.1v1 are followed by the\napplicable SCuBA policy in parenthesis.\n\n1. Sign in to the **Microsoft Purview portal**.\n\n2. Under the **Solutions** section on the left-hand menu, select **Data loss\n   prevention**.\n\n3. Select **Policies** from the top of the page.\n\n4. Select **Create policy**.\n\n5. From the **Categories** list, select **Custom**.\n\n6. From the **Regulations** list, select **Custom policy** and then click\n   **Next**.\n\n7. Edit the name and description of the policy if desired, then click\n   **Next**.\n\n8. Under **Assign admin units**,  ensure **Admin units** is set to **Full directory** by default, then click **Next**.\n\n9. Under **Choose where to apply the policy**, set **Status** to **On**\n   for at least the Exchange email, OneDrive accounts, SharePoint\n   sites, Teams chat and channel messages, and Devices locations, then\n   click **Next**. (_MS.SECURITYSUITE.3.2v1_)\n\n10. Under **Define policy settings**, select **Create or customize advanced\n   DLP rules**, and then click **Next**.\n\n11. Click **Create rule**. Assign the rule an appropriate name and\n   description.\n\n12. Click **Add condition**, then **Content contains**.\n\n13. Click **Add**, then **Sensitive info types**.\n\n14. Add information types that protect information sensitive to the agency.\n    At a minimum, the agency should protect:\n\n    - Credit card numbers\n    - U.S. Individual Taxpayer Identification Numbers (ITIN)\n    - U.S. Social Security Numbers (SSN)\n    - All agency-defined PII and sensitive information\n\n15. Click **Add**.\n\n16. Under **Actions**, click **Add an action**.\n\n17. Check **Restrict Access or encrypt the content in Microsoft 365\n    locations**.\n\n18. Under this action, select **Block Everyone**. (_MS.SECURITYSUITE.3.3v1_)\n\n19. Under **User notifications**, turn on **Use notifications to inform your users and help educate them on the proper use of sensitive info**. (_MS.SECURITYSUITE.3.4v1_)\n\n20. Under **Microsoft 365 services** if using a GCC environment or under **Microsoft 365 files and Microsoft Fabric items** if using a Commercial environment, a section that appears after user notifications are turned on, check the box next to **Notify users in Office 365 service with a policy tip or email notifications**. (_MS.SECURITYSUITE.3.4v1_)\n\n21. Click **Save**, then **Next**.\n\n22. Select **Turn the policy on immediately**, then click **Next**.\n\n23. Click **Submit**."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.3.2v1",
+            "title": "The DLP policy SHOULD be applied to Exchange, OneDrive, SharePoint, Teams chat, and Devices.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.3.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-7.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-7(10)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.3.2v1_smt",
+                "name": "statement",
+                "prose": "The DLP policy SHOULD be applied to Exchange, OneDrive, SharePoint, Teams chat, and Devices."
+              },
+              {
+                "id": "ms.securitysuite.3.2v1_gdn",
+                "name": "guidance",
+                "prose": "Unauthorized disclosures may happen through M365 services"
+              },
+              {
+                "id": "ms.securitysuite.3.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "See [MS.SECURITYSUITE.3.1v1 Instructions](#mssecuritysuite31v1-instructions) step 9\n   for details on enforcing DLP policy in specific M365 service locations."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.3.3v1",
+            "title": "The action for the DLP policy SHOULD be set to block sharing sensitive information with everyone.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.3.3v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-3"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-7.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-7(10)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.3.3v1_smt",
+                "name": "statement",
+                "prose": "The action for the DLP policy SHOULD be set to block sharing sensitive information with everyone."
+              },
+              {
+                "id": "ms.securitysuite.3.3v1_gdn",
+                "name": "guidance",
+                "prose": "Access to sensitive information should be prohibited unless"
+              },
+              {
+                "id": "ms.securitysuite.3.3v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "See [MS.SECURITYSUITE.3.1v1 Instructions](#mssecuritysuite31v1-instructions) steps\n   16-18 for details on configuring DLP policy to block sharing sensitive\n   information with everyone."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.3.4v1",
+            "title": "Notifications to inform users and help educate them on the proper use of sensitive information SHOULD be enabled in the DLP policy.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.3.4v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#at-2",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AT-2b"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.3.4v1_smt",
+                "name": "statement",
+                "prose": "Notifications to inform users and help educate them on the proper use of sensitive information SHOULD be enabled in the DLP policy."
+              },
+              {
+                "id": "ms.securitysuite.3.4v1_gdn",
+                "name": "guidance",
+                "prose": "Some users may not be aware of agency policies on"
+              },
+              {
+                "id": "ms.securitysuite.3.4v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "See [MS.SECURITYSUITE.3.1v1 Instructions](#mssecuritysuite31v1-instructions) steps\n   19-20 for details on configuring DLP policy to notify users when accessing\n   sensitive information."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.3.5v1",
+            "title": "The DLP policy SHOULD include an action to block access to sensitive information by restricted apps",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.3.5v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-19",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-19a"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.3.5v1_smt",
+                "name": "statement",
+                "prose": "The DLP policy SHOULD include an action to block access to sensitive information by restricted apps"
+              },
+              {
+                "id": "ms.securitysuite.3.5v1_gdn",
+                "name": "guidance",
+                "prose": "Some apps may inappropriately share accessed files or not conform to agency policies"
+              },
+              {
+                "id": "ms.securitysuite.3.5v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "These implementation steps are only applicable if at least one device has been onboarded with\nDefender for Endpoint.\n\n1. Sign in to the **Microsoft Purview portal**.\n2. Under **Settings**, select **Data Loss Prevention**.\n3. (Optional) Select **Restricted apps and app groups**. Add or edit restricted apps per agency\n  discretion.\n4. Select **Unallowed Bluetooth apps** then **Add or edit unallowed Bluetooth apps**.\n5. Ensure **Include Bluetooth apps recommended by Microsoft** is **On**.\n6. (Optional) Add other apps to restrict, per agency discretion.\n7. Click **Save**.\n8. Return to the main menu. Under **Solutions**, select **Data Loss Prevention**.\n9. Select **Policies** from the top of the page.\n10. Find the custom DLP policy configured under\n   [MS.SECURITYSUITE.3.1v1 Instructions](#mssecuritysuite31v1-instructions) in the list\n   and click the Policy name to select.\n11. Select **Edit Policy**.\n12. Click **Next** on each page in the policy wizard until you reach the\n   **Advanced DLP rules page**.\n13. Select the relevant rule and click the pencil icon to edit it.\n14. Under **Actions**, click **Add an action**.\n15. Choose **Audit or restrict activities on device**\n16. Under **File activities for all apps**, select\n    **Apply restrictions to specific activity**.\n17. Check the box next to **Copy or move using unallowed Bluetooth app**\n    and set its action to **Block**.\n18. Under **App access restrictions**, check the **Access by restricted apps** box\n   and set the action drop-down to **Block**.\n19. Click **Save** to save the changes.\n20. Click **Next** on each page until reaching the\n    **Review your policy and create it** page.\n21. Review the policy and click **Submit** to complete the policy changes."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.securitysuite.4",
+        "title": "Alerts",
+        "controls": [
+          {
+            "id": "ms.securitysuite.4.1v1",
+            "title": "At a minimum, the following alerts SHALL be enabled:",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.4.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-4.5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-4(5)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.4.1v1_smt",
+                "name": "statement",
+                "prose": "At a minimum, the following alerts SHALL be enabled:"
+              },
+              {
+                "id": "ms.securitysuite.4.1v1_gdn",
+                "name": "guidance",
+                "prose": "Potentially malicious or service-impacting events may go undetected without a means of detecting these events. Setting up a mechanism to alert administrators to the list of events linked above draws attention to them to minimize any impact to users and the agency."
+              },
+              {
+                "id": "ms.securitysuite.4.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Sign in to **Microsoft 365 Defender**.\n\n2. Under **Email & collaboration**, select **Policies & rules**.\n\n3. Select **Alert Policy**.\n\n4. Select the checkbox next to each alert to enable as determined by the\n   agency and at a minimum the following:\n\n   a. **Suspicious email sending patterns detected.**\n\n   b. **Suspicious connector activity.**\n\n   c. **Suspicious Email Forwarding Activity.**\n\n   d. **Messages have been delayed.**\n\n   e. **Tenant restricted from sending unprovisioned email.**\n\n   f. **Tenant restricted from sending email.**\n\n   g. **A potentially malicious URL click was detected.**\n\n5. Click the pencil icon from the top menu.\n\n6. Select the **Enable selected policies** action from the **Bulk actions**\n   menu."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.4.2v1",
+            "title": "The alerts SHOULD be sent to a monitored address or incorporated into a Security Information and Event Management (SIEM).",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.4.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-4.5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-4(5)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.4.2v1_smt",
+                "name": "statement",
+                "prose": "The alerts SHOULD be sent to a monitored address or incorporated into a Security Information and Event Management (SIEM)."
+              },
+              {
+                "id": "ms.securitysuite.4.2v1_gdn",
+                "name": "guidance",
+                "prose": "Suspicious or malicious events, if not resolved promptly, may have a greater impact to users and the agency. Sending alerts to a monitored email address or SIEM system helps ensure events are acted upon in a timely manner to limit overall impact."
+              },
+              {
+                "id": "ms.securitysuite.4.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "For each enabled alert, to add one or more email recipients:\n\n1. Sign in to **Microsoft 365 Defender**.\n\n2. Under **Email & collaboration**, select **Policies & rules**.\n\n3. Select **Alert Policy**.\n\n4. Click the alert policy to modify.\n\n5. Click the pencil icon next to **Set your recipients**.\n\n6. Check the **Opt-In for email notifications** box.\n\n7. Add one or more email addresses to the **Email recipients** text box.\n\n8. Click **Next**.\n\n9. On the **Review** page, click **Submit** to save the notification settings."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.securitysuite.5",
+        "title": "Audit Logging",
+        "controls": [
+          {
+            "id": "ms.securitysuite.5.1v1",
+            "title": "Unified Audit logging SHALL be enabled.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.5.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#au-12",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AU-12"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.5.1v1_smt",
+                "name": "statement",
+                "prose": "Unified Audit logging SHALL be enabled."
+              },
+              {
+                "id": "ms.securitysuite.5.1v1_gdn",
+                "name": "guidance",
+                "prose": "Responding to incidents without detailed information about activities that took place slows response actions. Enabling Unified Audit logging helps ensure agencies have visibility into user actions."
+              },
+              {
+                "id": "ms.securitysuite.5.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To enable auditing via the **Microsoft Purview portal**:\n\n1. Sign in to the **Microsoft Purview portal**.\n\n2. Under **Solutions**, select **Audit**.\n\n3. If auditing is not enabled, a banner is displayed to notify the\nadministrator to start recording user and admin activity.\n\n4. Click the **Start recording user and admin activity**."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.5.2v1",
+            "title": "Audit logs SHALL be retained and searchable for a minimum of 3 months and retrievable for a minimum of 12 months.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.5.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#au-11",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AU-11"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.5.2v1_smt",
+                "name": "statement",
+                "prose": "Audit logs SHALL be retained and searchable for a minimum of 3 months and retrievable for a minimum of 12 months."
+              },
+              {
+                "id": "ms.securitysuite.5.2v1_gdn",
+                "name": "guidance",
+                "prose": "Audit logs may no longer be available when needed if they are not retained for a sufficient time. Increased log retention time gives an agency the necessary visibility to investigate incidents that occurred some time ago."
+              },
+              {
+                "id": "ms.securitysuite.5.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "One option for controlling how long logs are retained in M365 is to create one or more custom audit\nretention policies. For more details, see [Create an audit log retention policy](https://learn.microsoft.com/en-us/purview/audit-log-retention-policies?view=o365-worldwide#create-an-audit-log-retention-policy)\ninstructions.\n\nAs noted in the [License Requirements](https://github.com/cisagov/ScubaGear/baselines/securitysuite.md#license-requirements-1)\nsection above, the creation of a custom audit log retention policy and its retention in the M365\nenvironment requires E5/G5 licenses or E3/G3 licenses with add-on compliance licenses. However, no\nadditional license is required to export logs. To export audit logs, follow\n[Export, configure, and view audit log records | Microsoft Learn](https://learn.microsoft.com/en-us/purview/audit-log-export-records)\nand/or [Untitled Goose Tool Fact Sheet | CISA.](https://www.cisa.gov/resources-tools/resources/untitled-goose-tool-fact-sheet)."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.securitysuite.6",
+        "title": "Inbound Anti-Spam Protections",
+        "controls": [
+          {
+            "id": "ms.securitysuite.6.1v1",
+            "title": "Emails detected as spam and phishing SHALL NOT be delivered to the user's inbox.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.6.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-8"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.6.1v1_smt",
+                "name": "statement",
+                "prose": "Emails detected as spam and phishing SHALL NOT be delivered to the user's inbox."
+              },
+              {
+                "id": "ms.securitysuite.6.1v1_gdn",
+                "name": "guidance",
+                "prose": "Spam is a constant threat as junk mail can reduce user productivity, fill up mailboxes unnecessarily, and in some cases include malicious links or attachments."
+              },
+              {
+                "id": "ms.securitysuite.6.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "Both the standard and strict preset policies meet this baseline policy requirement,\nso no further actions are needed for users added to those policies. See\n[Adding Users to the Preset Security Policies](#appendix-a-adding-users-to-the-preset-security-policies)\nfor instructions on adding users to these policies.\n\nAs the steps for MS.SECURITYSUITE.6.1v1 and MS.SECURITYSUITE.6.2v1 share many steps in common,\nsteps for both policies are included in this section. Steps that do not strictly apply to\nMS.SECURITYSUITE.6.1v1 are followed by the applicable SCuBA policy in parenthesis.\n\nFor users not added to the standard or strict preset policies:\n1.  Sign in to **Microsoft 365 Defender**.\n2.  Under **Email & collaboration**, select **Policies & rules**.\n3.  Select **Threat policies**.\n4.  Under **Policies**, select **Anti-spam**.\n5.  If modifying an existing policy:\n    1. Click the name of the policy from the policy list to open the policy summary. Note: be sure to\n    select an *inbound* policy. If it's a custom policy, it will say \"Custom anti-spam policy\"\n    under **Type** instead of of **Custom output spam policy**.\n    2. Click **Edit users, groups, and domains**. _Note:_ the **Anti-spam inbound policy (Default)** policy applies to all users, so skip this step if modifying the default policy.\n      - Add users, groups, and domains as needed. To make the policy apply to all users, under\n        **Domains**, enter all the tenant domains.\n      - (Optional) Under **Exclude these users, groups, and domains**, add **Users** and **Groups**\n        to be exempted from this policy.\n      - Click **Save**.\n    3. Click **Edit spam threshold and properties** See [Recommended email and collaboration threat policy settings for cloud organizations](https://learn.microsoft.com/en-us/defender-office-365/recommended-settings-for-eop-and-office365)\n    for configuration guidance. We recommend mirroring the values used for either the standard or\n    strict preset policies. Click **Save**.\n    4. Click **Edit actions**.\n    5. For each email classification (**Spam**, **High confidence spam**, **Phishing**, and **High confidence phishing**), select one of the following options:\n      - **Move message to Junk Email folder**\n      - **Redirect message to email address**\n      - **Delete message**\n      - **Quarantine message**\n\n     Note: **Delete message** is not available for **High confidence phishing**; choose one of the other three options for that classification.\n    \n    6. If you selected **Redirect message to email address**, also fill in an appropriate email for\n      the **Redirect to this email address** field, such as a mailbox set up for monitoring incoming\n      spam and phishing messages.\n    7. Click **Edit allowed and blocked senders and domains**.\n    8. Under **Allowed**, click **Allow domains**. Select any domains that have been allowed, then\n        **Delete** (the trash icon). (_MS.SECURITYSUITE.6.2v1_)\n    9. Click **Save**.\n7.  If creating a new policy:\n    1. Click **Create**, then **Inbound**.\n    2. After naming the policy, click **Next**.\n    3. Add users, groups, and domains as needed. To make the policy apply to all users, under\n       **Domains**, enter all the tenant domains.\n    4. (Optional) Under **Exclude these users, groups, and domains**, add **Users** and **Groups**\n       to be exempted from this policy.\n    5. Click **Next**.\n    6. On the **Bulk email threshold & spam properties** page, see [Recommended email and collaboration threat policy settings for cloud organizations](https://learn.microsoft.com/en-us/defender-office-365/recommended-settings-for-eop-and-office365)\n    for configuration guidance. We recommend mirroring the values used for either the standard or\n    strict preset policies.\n    7. For each email classification (**Spam**, **High confidence spam**, **Phishing**, and **High confidence phishing**), select one of the following options:\n      - **Move message to Junk Email folder**\n      - **Redirect message to email address**\n      - **Delete message**\n      - **Quarantine message**\n    8. If you selected **Redirect message to email address**, also fill in an appropriate email for\n      the **Redirect to this email address** field, such as a mailbox set up for monitoring incoming\n      spam and phishing messages.\n    9. Click **Next**\n    10. On the **Allow & block list** page, do not click **Allow domains** under **Allowed**. It\n    should read **Domains (0)** under **Allowed**. (_MS.SECURITYSUITE.6.2v1_)\n    11. **Next**, then **Submit**."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.6.2v1",
+            "title": "Allowed domains SHALL NOT be added to inbound anti-spam protection policies.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.6.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-8"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.6.2v1_smt",
+                "name": "statement",
+                "prose": "Allowed domains SHALL NOT be added to inbound anti-spam protection policies."
+              },
+              {
+                "id": "ms.securitysuite.6.2v1_gdn",
+                "name": "guidance",
+                "prose": "Legitimate emails may be incorrectly filtered"
+              },
+              {
+                "id": "ms.securitysuite.6.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "Both the standard and strict preset policies meet this baseline policy requirement,\nso no further actions are needed for users added to those policies. See\n[Adding Users to the Preset Security Policies](#appendix-a-adding-users-to-the-preset-security-policies)\nfor instructions on adding users to these policies.\n\nFor users not added to the standard or strict preset policies, see [MS.SECURITYSUITE.6.1v1 Instructions](#mssecuritysuite61v1-instructions)."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.securitysuite.7",
+        "title": "Link Protection",
+        "controls": [
+          {
+            "id": "ms.securitysuite.7.1v1",
+            "title": "URL comparison with a block-list SHOULD be enabled for URLs in emails, Teams messages, and Office documents.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.7.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-3"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.7.1v1_smt",
+                "name": "statement",
+                "prose": "URL comparison with a block-list SHOULD be enabled for URLs in emails, Teams messages, and Office documents."
+              },
+              {
+                "id": "ms.securitysuite.7.1v1_gdn",
+                "name": "guidance",
+                "prose": "Users may be directed to malicious websites via links in email. Blocking access to known, malicious URLs can prevent users from accessing known malicious websites."
+              },
+              {
+                "id": "ms.securitysuite.7.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "Both the standard and strict preset policies meet this baseline policy requirement,\nso no further actions are needed for users added to those policies. See\n[Adding Users to the Preset Security Policies](#appendix-a-adding-users-to-the-preset-security-policies)\nfor instructions on adding users to these policies.\n\nAs the steps for MS.SECURITYSUITE.7.1v1, MS.SECURITYSUITE.7.2v1, and MS.SECURITYSUITE.7.3v1 share\nmany steps in common, steps for all three policies are included in this section. Steps that do not\nstrictly apply to MS.SECURITYSUITE.7.1v1 are followed by the applicable SCuBA policy in parenthesis.\n\nFor users not added to the standard or strict preset policies:\n1.  Sign in to **Microsoft 365 Defender**.\n2.  Under **Email & collaboration**, select **Policies & rules**.\n3.  Select **Threat policies**.\n4.  Under **Policies**, select **Safe-links**.\n5.  If modifying an existing policy:\n    1. Click the name of the policy from the policy list to open the policy summary.\n    2. Click **Edit users and domains**.\n        - Add users, groups, and domains as needed. To make the policy apply to all users, under\n          **Domains**, enter all the tenant domains.\n        - (Optional) Under **Exclude these users, groups, and domains**, add **Users** and **Groups**\n          to be exempted from this policy.\n        - Click **Save**.\n    3. Click **Edit protection settings**.\n    4. Under **Email**, ensure the following options are selected:\n        - **On: Safe Links checks a list of known, malicious links when users click links in email. URLs are rewritten by default.**\n        - **Apply Safe Links to email messages sent within the organization**\n        - **Apply real-time URL scanning for suspicious links and links that point to files** (_MS.SECURITYSUITE.7.2v1_)\n        - **Wait for URL scanning to complete before delivering the message** (_MS.SECURITYSUITE.7.2v1_)\n    5. Under **Teams**, select **On: Safe Links checks a list of known, malicious links when users click links in Microsoft Teams. URLs are not rewritten.**\n    6. Under **Office 365 Apps**, select **On: Safe Links checks a list of known, malicious links when users click links in Microsoft Office Apps. URLs are not rewritten.**\n    7. Under **Click protection settings**, select **Track user clicks**. (_MS.SECURITYSUITE.7.3v1_)\n    8. Click **Save**.\n6. If creating a new policy:\n    1. Click **Create**.\n    2. After naming the policy, click **Next**.\n    3. Add users, groups, and domains as needed. To make the policy apply to all users, under\n       **Domains**, enter all the tenant domains.\n    4. (Optional) Under **Exclude these users, groups, and domains**, add **Users** and **Groups**\n       to be exempted from this policy.\n    5. Click **Next**.\n    6. Under **Email**, ensure the following options are selected:\n        - **On: Safe Links checks a list of known, malicious links when users click links in email. URLs are rewritten by default.**\n        - **Apply Safe Links to email messages sent within the organization**\n        - **Apply real-time URL scanning for suspicious links and links that point to files** (_MS.SECURITYSUITE.7.2v1_)\n        - **Wait for URL scanning to complete before delivering the message** (_MS.SECURITYSUITE.7.2v1_)\n    7. Under **Teams**, select **On: Safe Links checks a list of known, malicious links when users click links in Microsoft Teams. URLs are not rewritten.**\n    8. Under **Office 365 Apps**, select **On: Safe Links checks a list of known, malicious links when users click links in Microsoft Office Apps. URLs are not rewritten.**\n    9. Under **Click protection settings**, select **Track user clicks**. (_MS.SECURITYSUITE.7.3v1_)\n    10. Click **Next**, **Next**, and **Submit**."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.7.2v1",
+            "title": "Direct download links SHOULD be scanned for malware.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.7.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-3"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.7.2v1_smt",
+                "name": "statement",
+                "prose": "Direct download links SHOULD be scanned for malware."
+              },
+              {
+                "id": "ms.securitysuite.7.2v1_gdn",
+                "name": "guidance",
+                "prose": "URLs in emails may direct users to download and run malware."
+              },
+              {
+                "id": "ms.securitysuite.7.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "Both the standard and strict preset policies meet this baseline policy requirement,\nso no further actions are needed for users added to those policies. See\n[Adding Users to the Preset Security Policies](#appendix-a-adding-users-to-the-preset-security-policies)\nfor instructions on adding users to these policies.\n\nFor users not added to the standard or strict preset policies, see [MS.SECURITYSUITE.7.1v1 Instructions](#mssecuritysuite71v1-instructions)."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.7.3v1",
+            "title": "User click tracking SHOULD be enabled.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.7.3v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-3"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#au-12",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AU-12c"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.7.3v1_smt",
+                "name": "statement",
+                "prose": "User click tracking SHOULD be enabled."
+              },
+              {
+                "id": "ms.securitysuite.7.3v1_gdn",
+                "name": "guidance",
+                "prose": "Users may click on malicious links in emails, leading to compromise or unauthorized data disclosure. Enabling user click tracking lets agencies know if a malicious link may have been visited after the fact to help tailor a response to a potential incident."
+              },
+              {
+                "id": "ms.securitysuite.7.3v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "Both the standard and strict preset policies meet this baseline policy requirement,\nso no further actions are needed for users added to those policies. See\n[Adding Users to the Preset Security Policies](#appendix-a-adding-users-to-the-preset-security-policies)\nfor instructions on adding users to these policies.\n\nFor users not added to the standard or strict preset policies, see [MS.SECURITYSUITE.7.1v1 Instructions](#mssecuritysuite71v1-instructions)."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.securitysuite.8",
+        "title": "IP Allow Lists",
+        "controls": [
+          {
+            "id": "ms.securitysuite.8.1v1",
+            "title": "IP allow lists SHOULD NOT be created.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.8.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-4",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-4"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.8.1v1_smt",
+                "name": "statement",
+                "prose": "IP allow lists SHOULD NOT be created."
+              },
+              {
+                "id": "ms.securitysuite.8.1v1_gdn",
+                "name": "guidance",
+                "prose": "Messages sent from IP addresses on an allow list bypass important"
+              },
+              {
+                "id": "ms.securitysuite.8.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To modify the connection filters, follow the instructions found in [Use\nthe Microsoft 365 Defender portal to modify the default connection\nfilter\npolicy](https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/connection-filter-policies-configure?view=o365-worldwide#use-the-microsoft-365-defender-portal-to-modify-the-default-connection-filter-policy).\n\n1. Sign in to **Microsoft 365 Defender portal**.\n\n2. From the left-hand menu, find **Email & collaboration** and select **Policies and Rules**.\n\n3. Select **Threat Policies** from the list of policy names.\n\n4. Under **Policies**, select **Anti-spam**.\n\n5. Select **Connection filter policy (Default)**.\n\n6. Click **Edit connection filter policy**.\n\n7. Ensure no addresses are specified under **Always allow messages from\n   the following IP addresses or address range**.\n\n8. Ensure **Turn on safe list** is not selected."
+              }
+            ]
+          },
+          {
+            "id": "ms.securitysuite.8.2v1",
+            "title": "Safe lists SHOULD NOT be enabled.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.SECURITYSUITE.8.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-4",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-4"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.securitysuite.8.2v1_smt",
+                "name": "statement",
+                "prose": "Safe lists SHOULD NOT be enabled."
+              },
+              {
+                "id": "ms.securitysuite.8.2v1_gdn",
+                "name": "guidance",
+                "prose": "Messages sent from allowed safe list addresses bypass important"
+              },
+              {
+                "id": "ms.securitysuite.8.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. Sign in to **Microsoft 365 Defender portal**.\n\n2. From the left-hand menu, find **Email & collaboration** and select **Policies and Rules**.\n\n3. Select **Threat Policies** from the list of policy names.\n\n4. Under **Policies**, select **Anti-spam**.\n\n5. Select **Connection filter policy (Default)**.\n\n6. Click **Edit connection filter policy**.\n\n7. (Optional) Enter addresses under **Always block messages from the following\n   IP addresses or address range** as needed.\n\n8. Ensure **Turn on safe list** is not selected."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

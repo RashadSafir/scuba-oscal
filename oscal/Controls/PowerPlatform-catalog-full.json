@@ -1,0 +1,424 @@
+{
+  "catalog": {
+    "uuid": "0c0fa066-1273-5d11-b66f-03693340af70",
+    "metadata": {
+      "title": "CISA SCuBA Power Platform (MS.POWERPLATFORM) Baseline - all policies",
+      "last-modified": "2026-09-23T00:00:00+00:00",
+      "version": "0.3.0",
+      "oscal-version": "1.1.2"
+    },
+    "groups": [
+      {
+        "id": "ms.powerplatform.1",
+        "title": "Creation of Power Platform Environments",
+        "controls": [
+          {
+            "id": "ms.powerplatform.1.1v1",
+            "title": "The ability to create production and sandbox environments SHALL be restricted to admins.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.POWERPLATFORM.1.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(10)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.powerplatform.1.1v1_smt",
+                "name": "statement",
+                "prose": "The ability to create production and sandbox environments SHALL be restricted to admins."
+              },
+              {
+                "id": "ms.powerplatform.1.1v1_gdn",
+                "name": "guidance",
+                "prose": "Users creating new Power Platform environments may inadvertently bypass data loss prevention (DLP) policy settings or misconfigure the security settings of their environment."
+              },
+              {
+                "id": "ms.powerplatform.1.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Sign in to your tenant environment's respective [Power Platform admin\n    center](https://learn.microsoft.com/en-us/power-platform/admin/powerapps-us-government#power-apps-us-government-service-urls).\n\n2.  In the upper-right corner of the Microsoft Power Platform site,\n    select the **Gear icon** (Settings icon).\n\n3.  Select **Power Platform settings**.\n\n4.  Under **Production environment assignments**, select\n    **Only specific admins.**"
+              }
+            ]
+          },
+          {
+            "id": "ms.powerplatform.1.2v1",
+            "title": "The ability to create trial environments SHALL be restricted to admins.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.POWERPLATFORM.1.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(10)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.powerplatform.1.2v1_smt",
+                "name": "statement",
+                "prose": "The ability to create trial environments SHALL be restricted to admins."
+              },
+              {
+                "id": "ms.powerplatform.1.2v1_gdn",
+                "name": "guidance",
+                "prose": "Users creating new Power Platform environments may inadvertently bypass DLP policy settings or misconfigure the security settings of their environment."
+              },
+              {
+                "id": "ms.powerplatform.1.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Follow the MS.POWERPLATFORM.1.1v1 instructions up to step **3**.\n\n2.  Under **Trial environment assignments**, select **Only specific admins.**"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.powerplatform.2",
+        "title": "Power Platform Data Loss Prevention Policies",
+        "controls": [
+          {
+            "id": "ms.powerplatform.2.1v1",
+            "title": "A DLP policy SHALL be created to restrict connector access in the default Power Platform environment.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.POWERPLATFORM.2.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-7.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-7(10)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.powerplatform.2.1v1_smt",
+                "name": "statement",
+                "prose": "A DLP policy SHALL be created to restrict connector access in the default Power Platform environment."
+              },
+              {
+                "id": "ms.powerplatform.2.1v1_gdn",
+                "name": "guidance",
+                "prose": "All users in the tenant have access to the default Power Platform environment. Those users may inadvertently use connectors that share sensitive information with others who should not have access to it. Users requiring Power Apps should be directed to conduct development in other Power Platform environments with DLP connector policies customized to suit the user's needs while also maintaining the agency's security posture."
+              },
+              {
+                "id": "ms.powerplatform.2.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Sign in to your tenant environment's respective [Power Platform admin\n    center](https://learn.microsoft.com/en-us/power-platform/admin/powerapps-us-government#power-apps-us-government-service-urls).\n\n2.  On the left pane, select **Security** -\\> **Data and privacy.**\n\n3.   Select **Data policy,** then select **+ New Policy** icon to create a new policy.\n\n4.  Give the policy a suitable agency name and click **Next.**\n\n5.  At the **Prebuilt connectors** section, search and select the connectors currently in the **Non-business | default** tab containing sensitive data that can be utilized to create flows and apps.\n\n6.  Click **Move to Business.** Connectors added to this group can not share data with connectors in other groups because connectors can reside in only one data group at a time. \n\n7.  If necessary (and possible) for the connector, click **Configure connector** at the top of the screen to change connector permissions. This allows greater flexibility for the agency to allow and block certain connector actions for additional customization. \n\n8.  For the default environment, move all other connectors to the **Blocked** category. For non-blockable connectors noted above, the Block action will be grayed out and a warning will appear.\n\n9.  At the bottom of the screen, select **Next** to move on.\n\n10.  Add a custom connector pattern. Custom connectors allow admins to specify an ordered list of Allow and Deny URL patterns for custom connectors.  View [DLP for custom connectors \\| Microsoft\n  Learn](https://learn.microsoft.com/en-us/power-platform/admin/dlp-custom-connector-parity?WT.mc_id=ppac_inproduct_datapol) for more information.\n\n11.  Click **Next**.\n\n12.  At the **Scope** section for the default environment, select **Add multiple environments** then click **Next**.\n\n13.  Select the default environment, then select the **+ Add to policy** button at the top of the screen, then select **Next**.\n\n14. Select **Next**-\\> **Create Policy** to finish."
+              }
+            ]
+          },
+          {
+            "id": "ms.powerplatform.2.2v1",
+            "title": "Non-default environments SHOULD have at least one DLP policy affecting them.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.POWERPLATFORM.2.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-7.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-7(10)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.powerplatform.2.2v1_smt",
+                "name": "statement",
+                "prose": "Non-default environments SHOULD have at least one DLP policy affecting them."
+              },
+              {
+                "id": "ms.powerplatform.2.2v1_gdn",
+                "name": "guidance",
+                "prose": "Users may inadvertently use connectors that share sensitive information with others who should not have access to it. DLP policies provide a way for agencies to detect and prevent unauthorized disclosures."
+              },
+              {
+                "id": "ms.powerplatform.2.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Repeat steps 1 to 11 in the MS.POWERPLATFORM.2.1v1 instructions.\n\n2.  At the **Scope** section for the default environment, select **Add multiple environments** and select the non-default environments where you wish to enforce a DLP policy upon. If you wish to apply the DLP policy for all environments including environments created in the future select **Add all environments**.\n\n4.  Select **Next**-\\> **Create Policy** to finish."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.powerplatform.3",
+        "title": "Power Platform Tenant Isolation",
+        "controls": [
+          {
+            "id": "ms.powerplatform.3.1v1",
+            "title": "Power Platform tenant isolation SHALL be enabled.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.POWERPLATFORM.3.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-3"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-7.5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-7(5)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.powerplatform.3.1v1_smt",
+                "name": "statement",
+                "prose": "Power Platform tenant isolation SHALL be enabled."
+              },
+              {
+                "id": "ms.powerplatform.3.1v1_gdn",
+                "name": "guidance",
+                "prose": "Provides an additional tenant isolation control on top of Microsoft Entra ID tenant isolation specifically for Power Platform applications to prevent accidental or malicious cross tenant information sharing."
+              },
+              {
+                "id": "ms.powerplatform.3.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Sign in to your tenant environment's respective [Power Platform admin\n    center](https://learn.microsoft.com/en-us/power-platform/admin/powerapps-us-government#power-apps-us-government-service-urls).\n\n2.  On the left pane, select **Security -\\> Identity and access -\\> Tenant Isolation**.\n\n3.  Set the slider **Restrict cross-tenant connections** to **On,** then click **Save**\n    on the bottom of the screen."
+              }
+            ]
+          },
+          {
+            "id": "ms.powerplatform.3.2v1",
+            "title": "An inbound/outbound connection allowlist SHOULD be configured.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.POWERPLATFORM.3.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-3"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-7.5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-7(5)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.powerplatform.3.2v1_smt",
+                "name": "statement",
+                "prose": "An inbound/outbound connection allowlist SHOULD be configured."
+              },
+              {
+                "id": "ms.powerplatform.3.2v1_gdn",
+                "name": "guidance",
+                "prose": "Depending on agency needs an allowlist can be configured to allow cross tenant collaboration via connectors."
+              },
+              {
+                "id": "ms.powerplatform.3.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Follow steps **1 and 2** in **MS.POWERPLATFORM.3.1v1 instructions** to\narrive at the same page.\n\n2.  The tenant isolation exceptions can be configured by clicking **+ Add exceptions**\non the Tenant Isolation page.\n\n3.  Select the **Direction** of the rule and add the **Tenant Domain or ID** this rule applies to.\n\n4.  If Tenant Isolation is switched **Off**, these rules will not be enforced until tenant\nisolation is turned **On**."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.powerplatform.4",
+        "title": "Power Apps Content Security Policy",
+        "controls": [
+          {
+            "id": "ms.powerplatform.4.1v1",
+            "title": "Content Security Policy (CSP) SHALL be enforced for model-driven and canvas Power Apps.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.POWERPLATFORM.4.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-10"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.powerplatform.4.1v1_smt",
+                "name": "statement",
+                "prose": "Content Security Policy (CSP) SHALL be enforced for model-driven and canvas Power Apps."
+              },
+              {
+                "id": "ms.powerplatform.4.1v1_gdn",
+                "name": "guidance",
+                "prose": "Adds CSP as a defense mechanism for Power Apps against common website attacks."
+              },
+              {
+                "id": "ms.powerplatform.4.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  Sign in to your tenant environment's respective [Power Platform admin\ncenter](https://learn.microsoft.com/en-us/power-platform/admin/powerapps-us-government#power-apps-us-government-service-urls).\n\n2.  On the left-hand pane click on **Manage -\\> Environments** and then select an environment from the list.\n\n3.  Select the **Settings** icon at the top of the page.\n\n4.  Click on **Product** then click on **Privacy + Security** from the options that appear.\n\n5.  At the bottom of the page under the **Content security policy** section, set **Enforce content security policy** to **On** for **Model-driven** and **Canvas**.\n\n6.  At the same location, set **Enable reporting**  to **On** and add an appropriate endpoint for reporting CSP violations can be reported to.\n\n7.  Repeat steps 2 to 6 for all active Power Platform environments."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.powerplatform.5",
+        "title": "Power Pages Creation",
+        "controls": [
+          {
+            "id": "ms.powerplatform.5.1v1",
+            "title": "The ability to create Power Pages sites SHOULD be restricted to admins.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.POWERPLATFORM.5.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(10)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.powerplatform.5.1v1_smt",
+                "name": "statement",
+                "prose": "The ability to create Power Pages sites SHOULD be restricted to admins."
+              },
+              {
+                "id": "ms.powerplatform.5.1v1_gdn",
+                "name": "guidance",
+                "prose": "Users may unintentionally misconfigure their Power Pages to expose sensitive information or leave the website in a vulnerable state."
+              },
+              {
+                "id": "ms.powerplatform.5.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  This setting currently can only be enabled through the [Power Apps PowerShell modules](https://learn.microsoft.com/en-us/power-platform/admin/powerapps-powershell#installation).\n\n2. After installing the Power Apps PowerShell modules, run `Add-PowerAppsAccount -Endpoint $YourTenantsEndpoint`. To authenticate to your tenant's Power Platform.\nDiscover the valid endpoint parameter [here](https://learn.microsoft.com/en-us/powershell/module/microsoft.powerapps.administration.powershell/add-powerappsaccount?view=pa-ps-latest#-endpoint). Commercial tenants use `-Endpoint prod`, GCC tenants use `-Endpoint usgov` and so on.\n\n3. Then run the following PowerShell command to disable the creation of Power Pages sites by non-administrative users.\n\n    ```\n    Set-TenantSettings -RequestBody @{ “disablePortalsCreationByNonAdminUsers” = $true }\n    ```"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.powerplatform.6",
+        "title": "Power Apps Sharing Controls",
+        "controls": [
+          {
+            "id": "ms.powerplatform.6.1v1",
+            "title": "The Share with Everyone feature SHOULD be disabled.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.POWERPLATFORM.6.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(5)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-6.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-6(10)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.powerplatform.6.1v1_smt",
+                "name": "statement",
+                "prose": "The Share with Everyone feature SHOULD be disabled."
+              },
+              {
+                "id": "ms.powerplatform.6.1v1_gdn",
+                "name": "guidance",
+                "prose": "Prevents tenant-wide exposure of applications with unintended users. If enabled, this setting grants application access to the **Everyone** group for your organization. Its membership contains all users present in the directory, including B2B guest accounts and internal members. The **Everyone** group is not a standard Microsoft Entra ID security group and can't be edited or viewed, complicating auditing and access governance. The configuration setting is disabled by default; however, this is a defense-in-depth policy to protect against misconfigurations or malicious actors."
+              },
+              {
+                "id": "ms.powerplatform.6.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1.  This setting currently can only be enabled through the [Power Apps PowerShell modules](https://learn.microsoft.com/en-us/power-platform/admin/powerapps-powershell#installation).\n\n2. After installing the Power Apps PowerShell modules, run `Add-PowerAppsAccount -Endpoint $YourTenantsEndpoint`. To authenticate to your tenant's Power Platform.\nDiscover the valid endpoint parameter [here](https://learn.microsoft.com/en-us/powershell/module/microsoft.powerapps.administration.powershell/add-powerappsaccount?view=pa-ps-latest#-endpoint). Commercial tenants use `-Endpoint prod`, GCC tenants use `-Endpoint usgov` and so on.\n\n3. Then run the following PowerShell commands to get the settings object and set the variable `disableShareWithEveryone` to `$true`.\n\n    ```\n    $tenantSettings = Get-TenantSettings\n    $tenantSettings.powerPlatform.powerApps.disableShareWithEveryone = $true\n    Set-TenantSettings $tenantSettings\n    ```\n\n**`TLP:CLEAR`**"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
