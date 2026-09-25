@@ -8,10 +8,11 @@ The scan summary comes from the same verified records the AI reads (ai/findings.
 and the AI always agree. The compliance report is written by the AI (Assistant.compliance_report)
 and turned into a PDF by report_pdf.py. Azure OpenAI settings come from .env (see .env.example).
 
-Users can upload their own ScubaGear results (.json). The upload is checked against the SCuBA
-catalogs in oscal/Controls by the same pipeline as the repo data (pipeline/make_assessment_results.py,
-then comparison/compare_oscal.py), in a temporary folder; only that user's session switches to it,
-and the files in oscal/ are untouched. Controls the scan has no record for are NOT_ASSESSED.
+There is no default scan: the page opens on an upload panel, and the user uploads their ScubaGear
+results (.json) or tries the sample in data/sample/. The file is checked against the SCuBA catalogs
+in oscal/Controls by the pipeline (pipeline/make_assessment_results.py, then
+comparison/compare_oscal.py) in a temporary folder that is deleted afterwards. The result lives only
+in that browser session; a refresh starts over. Controls the scan has no record for are NOT_ASSESSED.
 """
 import importlib.util
 import json
@@ -57,17 +58,12 @@ GENERIC_ERROR = ("The AI service didn't return an answer. Check the Azure OpenAI
                  "and your network connection, then try again.")
 
 CONTROLS_DIR = ROOT / "oscal" / "Controls"   # the SCuBA catalogs an uploaded scan is checked against
+SAMPLE_SCAN = ROOT / "data" / "sample" / "scuba_results_sample.json"
 MAX_UPLOAD_MB = 50
 PIPELINE_TIMEOUT = 180  # seconds per step
 
 
-# --- Data and AI -------------------------------------------------------------
-@st.cache_resource(show_spinner=False, ttl="10m", max_entries=1)
-def get_assistant():
-    """The verified findings plus the AI client. Reloaded every 10 minutes to pick up new scans."""
-    return Assistant()
-
-
+# --- AI -----------------------------------------------------------------------
 def ai_problem():
     """Why the AI can't be reached, or None. Checks setup only; never reads credential values out."""
     if importlib.util.find_spec("openai") is None:
@@ -104,20 +100,17 @@ def ask(assistant, request, history):
 
 
 # --- Uploaded ScubaGear results -------------------------------------------------
-def check_upload(uploaded):
-    """The uploaded file's bytes if it is a ScubaGear results JSON file, else raise ValueError."""
-    if not uploaded.name.lower().endswith(".json"):
-        raise ValueError(f"{uploaded.name} is not a .json file. Upload the ScubaResults JSON file that "
-                         "ScubaGear produced.")
-    raw = uploaded.getvalue()
+def check_scan(name, raw):
+    """Raise ValueError unless the file is a ScubaGear results JSON file."""
+    if not name.lower().endswith(".json"):
+        raise ValueError(f"{name} is not a .json file. Upload the ScubaResults JSON file that ScubaGear produced.")
     try:
         doc = json.loads(raw.decode("utf-8-sig"))
     except (UnicodeDecodeError, json.JSONDecodeError):
-        raise ValueError(f"{uploaded.name} is not valid JSON. It may be damaged or not a ScubaGear file.") from None
+        raise ValueError(f"{name} is not valid JSON. It may be damaged or not a ScubaGear file.") from None
     if not isinstance(doc, dict) or not {"MetaData", "Results"} <= doc.keys():
-        raise ValueError(f"{uploaded.name} is JSON, but not a ScubaGear results report (it has no MetaData "
+        raise ValueError(f"{name} is JSON, but not a ScubaGear results report (it has no MetaData "
                          "and Results sections). Upload the ScubaResults JSON file from your ScubaGear output.")
-    return raw
 
 
 def combine_catalogs(folder, dest):
@@ -143,11 +136,11 @@ def pipeline_message(stderr):
     return lines[-1].removeprefix("ERROR: ")
 
 
-def process_upload(uploaded):
-    """Validate the upload and run it through the pipeline. Returns an Assistant over the new findings.
+def process_scan(name, raw):
+    """Validate a scan file and run it through the pipeline. Returns an Assistant over the new findings.
 
     Raises ValueError with a message for the user when the file is rejected."""
-    raw = check_upload(uploaded)
+    check_scan(name, raw)
     env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     with tempfile.TemporaryDirectory(prefix="scuba-upload-") as tmp:
         tmp = Path(tmp)
@@ -185,33 +178,36 @@ def reset_for_new_data():
     st.session_state.report_error = None
 
 
-def handle_upload(uploaded):
-    """Process a newly uploaded file once; switch back to the repo data when the file is removed."""
-    if uploaded is None:
-        if st.session_state.upload or st.session_state.upload_error:
-            if st.session_state.upload:
-                reset_for_new_data()
-            st.session_state.upload = None
-            st.session_state.upload_error = None
-        st.session_state.upload_file_id = None
-        return
-    if uploaded.file_id == st.session_state.upload_file_id:
-        return  # already handled on an earlier rerun
-    st.session_state.upload_file_id = uploaded.file_id
+def load_scan(name, raw):
+    """Process a scan and, if it is accepted, make it this session's scan."""
     try:
         with st.spinner("Processing the scan…"):
-            new_assistant = process_upload(uploaded)
+            new_assistant = process_scan(name, raw)
     except ValueError as exc:
         st.session_state.upload_error = str(exc)
         return
     except Exception:
-        log.exception("Could not process the uploaded scan")
+        log.exception("Could not process the scan")
         st.session_state.upload_error = "The scan couldn't be processed. Check that the file is ScubaGear output."
         return
-    st.session_state.upload = {"name": uploaded.name, "assistant": new_assistant}
+    st.session_state.upload = {"name": name, "assistant": new_assistant}
     st.session_state.upload_error = None
     reset_for_new_data()
-    st.toast(f"Loaded the scan for {new_assistant.info.get('tenant') or 'your tenant'}.", icon=":material/check_circle:")
+    st.session_state.flash = f"Loaded the scan for {new_assistant.info.get('tenant') or 'your tenant'}."
+    st.rerun()  # switch from the upload panel to the dashboard
+
+
+def handle_upload(uploaded):
+    """Process each newly chosen file once. Removing a rejected file clears its error."""
+    if uploaded is None:
+        if st.session_state.upload_file_id is not None:
+            st.session_state.upload_file_id = None
+            st.session_state.upload_error = None
+        return
+    if uploaded.file_id == st.session_state.upload_file_id:
+        return  # already handled on an earlier rerun (a rejected file stays in the box)
+    st.session_state.upload_file_id = uploaded.file_id
+    load_scan(uploaded.name, uploaded.getvalue())
 
 
 # --- Compliance report (AI-written, delivered as a PDF) ------------------------
@@ -308,9 +304,11 @@ if "report" not in st.session_state:
     st.session_state.report_requested = False
     st.session_state.report_error = None
 if "upload" not in st.session_state:
-    st.session_state.upload = None             # {"name", "assistant"} while an uploaded scan is in use
+    st.session_state.upload = None             # {"name", "assistant"} once a scan is loaded
     st.session_state.upload_error = None
     st.session_state.upload_file_id = None
+    st.session_state.load_sample = False
+    st.session_state.flash = None              # toast to show after switching to the dashboard
 
 
 def queue(kind, prompt, control_id=None):
@@ -333,6 +331,18 @@ def request_report():
     st.session_state.report_requested = True
 
 
+def request_sample():
+    st.session_state.load_sample = True
+
+
+def clear_scan():
+    """Back to the upload panel."""
+    st.session_state.upload = None
+    st.session_state.upload_error = None
+    st.session_state.upload_file_id = None
+    reset_for_new_data()
+
+
 # --- Page ---------------------------------------------------------------------
 st.set_page_config(page_title="SCuBA posture assistant", page_icon=ASSISTANT_AVATAR, layout="centered")
 
@@ -347,36 +357,51 @@ with st.sidebar:
     else:
         st.badge("AI ready", icon=":material/cloud_done:", color="green")
 
+
+# --- Upload panel: shown until a scan is loaded --------------------------------
+if st.session_state.upload is None:
+    st.title("SCuBA posture assistant", icon=ASSISTANT_AVATAR)
+    st.caption("Upload the results of a ScubaGear scan to see where your Microsoft Entra ID tenant stands "
+               "against the CISA SCuBA baseline, ask questions about it, and generate a compliance report.")
+    with st.container(border=True):
+        st.subheader("Upload your ScubaGear results", icon=":material/upload_file:")
+        st.markdown("Choose the **ScubaResults JSON file** from your ScubaGear output folder. "
+                    f"Only .json files are accepted, up to {MAX_UPLOAD_MB} MB.")
+        uploaded = st.file_uploader("ScubaGear results file", type=["json"], key="scan_upload",
+                                    max_upload_size=MAX_UPLOAD_MB, label_visibility="collapsed")
+        handle_upload(uploaded)
+        if st.session_state.load_sample:
+            st.session_state.load_sample = False
+            load_scan(SAMPLE_SCAN.name, SAMPLE_SCAN.read_bytes())
+        if st.session_state.upload_error:
+            st.error(st.session_state.upload_error, icon=":material/block:")
+        with st.container(horizontal=True, vertical_alignment="center"):
+            st.caption("No scan to hand?", width="content")
+            st.button("Try the sample scan", icon=":material/science:", type="tertiary", on_click=request_sample)
+    st.caption(":material/lock: Your file is processed in memory on this server and never saved. Only you "
+               "can see it, and it is gone when you refresh or close the page. When you use the chat or the "
+               "report, the scan's per-control results are sent to Azure OpenAI.")
+    st.stop()
+
+# --- Dashboard: a scan is loaded -------------------------------------------------
+assistant = st.session_state.upload["assistant"]
+findings, info, summary = assistant.findings, assistant.info, assistant.summary
+failures = prioritized_failures(findings)
+if st.session_state.flash:
+    st.toast(st.session_state.flash, icon=":material/check_circle:")
+    st.session_state.flash = None
+
+with st.sidebar:
     st.space("small")
     st.markdown("**Scan**")
-    uploaded = st.file_uploader(
-        "Upload ScubaGear results", type=["json"], key="scan_upload", max_upload_size=MAX_UPLOAD_MB,
-        help="The ScubaResults JSON file from a ScubaGear run. Only .json files are accepted.")
-    handle_upload(uploaded)
-    if st.session_state.upload_error:
-        st.error(st.session_state.upload_error, icon=":material/block:")
-
-    if st.session_state.upload:
-        assistant = st.session_state.upload["assistant"]
-        st.caption(f":material/upload_file: Showing your upload: {st.session_state.upload['name']}")
-    else:
-        try:
-            assistant = get_assistant()
-        except Exception:
-            log.exception("Could not load the OSCAL results")
-            st.error("Couldn't load oscal/findings.json. Upload a ScubaGear results file above, or "
-                     "regenerate it with comparison/compare_oscal.py.", icon=":material/error:")
-            st.stop()
-        st.caption(":material/folder: Showing the repo's scan (oscal/findings.json)")
-
-    findings, info, summary = assistant.findings, assistant.info, assistant.summary
-    failures = prioritized_failures(findings)
+    st.caption(f":material/upload_file: {st.session_state.upload['name']}")
     st.markdown(
         f":material/domain: {info.get('tenant') or 'Unknown tenant'}  \n"
         f":material/language: {info.get('domain') or 'Unknown domain'}  \n"
         f":material/schedule: {format_time(info.get('scan_time'))}  \n"
         f":material/build: ScubaGear {info.get('tool_version') or 'unknown'}"
     )
+    st.button("Upload a different scan", icon=":material/upload:", width="stretch", on_click=clear_scan)
 
     st.space("small")
     st.markdown("**Actions**")

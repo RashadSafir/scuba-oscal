@@ -47,7 +47,6 @@ class Control:
     recommendation: str | None
     remediation_guidance: str | None   # how to fix it
     nist: list[str] = field(default_factory=list)          # related NIST SP 800-53 controls
-    props: dict[str, str] = field(default_factory=dict)    # every control prop, as name -> value
     source: str = ""                   # catalog file name
 
 
@@ -131,7 +130,7 @@ def parse_catalog(path):
             recommendation=_text(parts, "recommendation", "recommendations"),
             remediation_guidance=_text(parts, "remediation"),
             nist=[link["text"] for link in c.get("links", []) if link.get("rel") == "related" and link.get("text")],
-            props=props, source=path.name)
+            source=path.name)
 
     def walk(node, group):
         for g in node.get("groups", []):
