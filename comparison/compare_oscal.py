@@ -60,6 +60,9 @@ class AssessmentResult:
     evidence: list[str] = field(default_factory=list)
     affected_resources: list[str] = field(default_factory=list)
     collected: str | None = None       # when the observation was made
+    finding_uuid: str | None = None    # the OSCAL finding this result came from
+    observation_uuids: list[str] = field(default_factory=list)   # its related OSCAL observations
+    risk_uuids: list[str] = field(default_factory=list)          # its related OSCAL risks (failures only)
 
 
 def load_json(path):
@@ -169,6 +172,7 @@ def parse_catalogs(paths):
 #   observation.props[name=scuba-result]      ScubaGear's own word: Pass | Fail | Warning
 #   observation.relevant-evidence[]           where the verdict came from
 #   observation.subjects[]                    affected resources (current scans have none)
+#   finding.uuid, observation.uuid, finding.related-risks[]   kept so answers can cite the OSCAL records
 #
 # Status is ScubaGear's, carried over as-is:
 #   satisfied                                  -> PASS
@@ -240,11 +244,15 @@ def parse_results(path):
                 evidence=[e["description"] for o in obs for e in o.get("relevant-evidence", []) if e.get("description")],
                 affected_resources=[s.get("title") or s.get("subject-uuid")
                                     for o in obs for s in o.get("subjects", []) if s.get("title") or s.get("subject-uuid")],
-                collected=next((o["collected"] for o in obs if o.get("collected")), None))
+                collected=next((o["collected"] for o in obs if o.get("collected")), None),
+                finding_uuid=f.get("uuid"),
+                observation_uuids=[o["uuid"] for o in obs if o.get("uuid")],
+                risk_uuids=[r["risk-uuid"] for r in f.get("related-risks", []) if r.get("risk-uuid")])
 
     props = props_dict(scans[0].get("props"))
     scan_info = dict(tenant=props.get("tenant-name"), domain=props.get("tenant-domain"),
-                     scan_time=scans[0].get("start"), tool_version=props.get("scuba-tool-version"))
+                     scan_time=scans[0].get("start"), tool_version=props.get("scuba-tool-version"),
+                     assessment_results_uuid=ar.get("uuid"), result_uuid=scans[0].get("uuid"))
     return results, scan_info
 
 
@@ -269,6 +277,9 @@ def combine(control, result, scubagear_source):
         "affected_resources": result.affected_resources if result else [],
         "remediation_guidance": control.remediation_guidance,
         "nist": control.nist,
+        "oscal": {"finding_uuid": result.finding_uuid if result else None,
+                  "observation_uuids": result.observation_uuids if result else [],
+                  "risk_uuids": result.risk_uuids if result else []},
         "source": {"scuba": control.source, "scubagear": scubagear_source},
     }
 

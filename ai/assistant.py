@@ -7,7 +7,8 @@ analyses, prioritises within the fixed order, and summarises. Every reply keeps 
       "text":        str   AI-generated analysis (Markdown). Label it as AI output in the UI.
       "verified":    list  Finding dicts for the controls the answer cites, copied from OSCAL.
                            Show these as the facts behind the answer.
-      "citations":   list  [{"id", "kind", "status", "title"}] for the same controls
+      "citations":   list  [{"id", "kind", "status", "title", "finding_uuid", "observation_uuid"}]
+                           for the same controls ("" uuids for controls that were not assessed)
       "unverified_references": list  control ids the model mentioned that are NOT in the
                            assessment (e.g. a SCuBA policy outside our scope). Warn about these.
   }
@@ -27,6 +28,8 @@ from . import findings as fm
 from .prompts import COMPLIANCE_REPORT_REQUEST, EXECUTIVE_SUMMARY_REQUEST, EXPLAIN_REQUEST, build_messages
 
 ENV_VARS = ("AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_API_KEY", "AZURE_OPENAI_DEPLOYMENT")
+TIMEOUT_SECONDS = 60   # per request; a hung call fails instead of freezing the app
+MAX_RETRIES = 2        # the client retries rate limits, timeouts and 5xx errors with backoff
 HISTORY_TURNS = 6   # earlier messages sent along for follow-up questions ("why does that matter?")
 CONTROL_ID = re.compile(r"\bMS\.[A-Z]+\.\d+\.\d+v\d+\b", re.IGNORECASE)
 
@@ -41,8 +44,23 @@ def make_client():
     if missing:
         raise RuntimeError(f"Azure OpenAI is not configured; set {', '.join(missing)} in .env")
     client = OpenAI(base_url=os.environ["AZURE_OPENAI_ENDPOINT"].rstrip("/") + "/openai/v1/",
-                    api_key=os.environ["AZURE_OPENAI_API_KEY"])
+                    api_key=os.environ["AZURE_OPENAI_API_KEY"], timeout=TIMEOUT_SECONDS,
+                    max_retries=MAX_RETRIES)
     return client, os.environ["AZURE_OPENAI_DEPLOYMENT"]
+
+
+def health_check(client=None, model=None):
+    """Is the AI actually reachable? Sends one tiny request. Returns {"ok": bool, "detail": str}.
+    detail names the error type only, never credentials."""
+    try:
+        if client is None:
+            client, model = make_client()
+        r = client.chat.completions.create(model=model, messages=[{"role": "user", "content": "Reply with: ok"}])
+        return {"ok": bool(r.choices), "detail": "connected"}
+    except RuntimeError as e:          # not configured
+        return {"ok": False, "detail": str(e)}
+    except Exception as e:             # network, auth, wrong deployment name, quota ...
+        return {"ok": False, "detail": f"{type(e).__name__}: the AI service did not answer"}
 
 
 def _strings(value):
@@ -112,9 +130,14 @@ class Assistant:
         return {
             "text": text,
             "verified": [f.to_dict() for f in cited],
-            "citations": [dict(id=f.control_id, kind="control", status=f.status, title=f.title) for f in cited],
+            "citations": [self._citation(f) for f in cited],
             "unverified_references": list(dict.fromkeys(unknown)),
         }
+
+    @staticmethod
+    def _citation(f):
+        return dict(id=f.control_id, kind="control", status=f.status, title=f.title,
+                    finding_uuid=f.finding_uuid, observation_uuid=f.observation_uuid)
 
     def answer(self, question, history=None):
         """Answer a free-form question. history: earlier [{"role": "user"|"assistant", "content"}]."""
@@ -134,7 +157,7 @@ class Assistant:
         reply = self.answer(EXPLAIN_REQUEST.format(control_id=f.control_id))
         if f.to_dict() not in reply["verified"]:   # always show the facts for the control asked about
             reply["verified"].insert(0, f.to_dict())
-            reply["citations"].insert(0, dict(id=f.control_id, kind="control", status=f.status, title=f.title))
+            reply["citations"].insert(0, self._citation(f))
         return reply
 
     def executive_summary(self):

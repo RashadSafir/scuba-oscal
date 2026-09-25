@@ -13,8 +13,10 @@
 - oscal/catalog.json
 - oscal/Controls/*.json (SCuBA catalogs, input to comparison/compare_oscal.py)
 - oscal/findings.json (compare_oscal.py output; the AI layer's only input)
-- oscal/assessment-results.json
+- oscal/profile.json (pipeline/make_profile.py: the catalog controls in scope)
+- oscal/assessment-results.json (back-matter holds the ScubaGear file with its SHA-256)
 - oscal/poam.json
+- pipeline/validate_oscal.py checks any of these against the OSCAL 1.1.2 models
 
 ## AI interface (Role 3)
 Code: `ai/` (`from ai import answer, default_assistant`). Facts come from `ai/findings.py` (plain code, no AI), which reads `oscal/findings.json`.
@@ -23,13 +25,15 @@ Code: `ai/` (`from ai import answer, default_assistant`). Facts come from `ai/fi
 answer(question: str, history: list[{"role", "content"}] | None = None) -> {
     "text": str,                     # AI-generated analysis (Markdown); label it as AI output
     "verified": list[Finding dict],  # OSCAL facts for every control the text cites
-    "citations": list[{"id", "kind", "status", "title"}],
+    "citations": list[{"id", "kind", "status", "title", "finding_uuid", "observation_uuid"}],
     "unverified_references": list[str],  # ids the model mentioned that are not in the assessment
 }
 default_assistant().explain(control_id)      # same shape, for "Ask AI about this finding"
 default_assistant().executive_summary()      # same shape
-default_assistant().compliance_report()      # same shape; long-form Markdown report (the app turns it into a PDF)
+default_assistant().compliance_report()      # same shape plus "report" (parsed JSON analysis; the app turns it into a PDF)
+ai.assistant.health_check()                  # {"ok", "detail"}: does the AI actually answer?
 ai.reload()                                  # after oscal/findings.json is regenerated (new upload)
 ```
 Finding fields: control_id, title, group, obligation, status (PASS | FAIL | NOT ASSESSED), priority,
-requirement, rationale, finding, evidence, scuba_result, remediation, nist
+requirement, rationale, finding, evidence, scuba_result, remediation, nist,
+oscal_control_id, finding_uuid, observation_uuid, risk_uuid ("" when not assessed)

@@ -13,6 +13,12 @@ results (.json) or tries the sample in data/sample/. The file is checked against
 in oscal/Controls by the pipeline (pipeline/make_assessment_results.py, then
 comparison/compare_oscal.py) in a temporary folder that is deleted afterwards. The result lives only
 in that browser session; a refresh starts over. Controls the scan has no record for are NOT_ASSESSED.
+
+The OSCAL tab shows every OSCAL file the upload produced (catalog, profile, assessment plan,
+assessment results, POA&M), each checked against the OSCAL 1.1.2 models (pipeline/validate_oscal.py),
+with the chain of uuids from one catalog control to its POA&M item. A person can attest the result
+of a control ScubaGear could not check; the attestation is added to the downloaded assessment
+results as an OSCAL observation (method EXAMINE or INTERVIEW). The scan's own statuses never change.
 """
 import html
 import importlib.util
@@ -24,7 +30,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from datetime import datetime, timezone
+import uuid
+import zipfile
+from datetime import date, datetime, timezone
+from io import BytesIO
 from pathlib import Path
 
 import pandas as pd
@@ -34,9 +43,13 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path[:0] = [str(ROOT), str(HERE)]
 
+from ai import assistant as ai_assistant  # noqa: E402
 from ai.assistant import ENV_VARS, Assistant  # noqa: E402
 from ai.findings import prioritized_failures  # noqa: E402
 from report_pdf import build_pdf  # noqa: E402
+
+sys.path.insert(0, str(ROOT / "pipeline"))
+from validate_oscal import validate  # noqa: E402
 
 log = logging.getLogger(__name__)
 
@@ -48,12 +61,13 @@ STATUS_BADGE = {  # status -> (label, color, icon)
     "NOT ASSESSED": ("Not assessed", "gray", ":material/help:"),
 }
 WARNING_BADGE = ("Warning", "orange", ":material/warning:")   # ScubaGear's word for a failed SHOULD
-PRIORITY_BADGE = {"high": ("High priority", "red"), "moderate": ("Moderate priority", "orange")}
+PRIORITY_BADGE = {"high": ("Required (SHALL)", "red"), "moderate": ("Recommended (SHOULD)", "orange")}
 
 TAB_OVERVIEW = "Overview"
 TAB_FINDINGS = "Findings"
 TAB_CHAT = "Questions"
 TAB_REPORT = "Report"
+TAB_OSCAL = "OSCAL"
 FIX_FIRST = 3   # high-priority failures shown on the overview
 POLICY_ID = re.compile(r"^MS\.[A-Z]+\.(\d+)\.(\d+)v\d+$")   # MS.AAD.<section>.<policy>v<version>
 MAP_CLASS = {"Fail": "fail", "Warning": "warn", "Pass": "pass", "Not assessed": "na"}
@@ -128,6 +142,20 @@ NOT_ASSESSED_REASONS = {   # ScubaGear's Result -> why the control has no pass/f
 }
 PIPELINE_TIMEOUT = 180  # seconds per step
 
+# The OSCAL files an upload produces, in the order of the model chain: (file, what it is)
+OSCAL_FILES = [
+    ("catalog.json", "Catalog", "The SCuBA MS.AAD policies as OSCAL controls, with NIST SP 800-53 links"),
+    ("profile.json", "Profile", "The controls selected from the catalog for this assessment"),
+    ("assessment-plan.json", "Assessment Plan", "What is assessed, how (TEST) and with what tool (ScubaGear)"),
+    ("assessment-results.json", "Assessment Results",
+     "What the scan found: observations, findings and risks, with the scan file's SHA-256 in back-matter"),
+    ("poam.json", "POA&M", "One plan item per failed control, linked to its finding and risk"),
+]
+SCAN_FILE = "scuba-results.json"   # the uploaded file's name in the OSCAL bundle (back-matter links to it)
+ATTEST_NS = uuid.UUID("6f1c2d3e-0000-4000-8000-5c0ba0000003")   # uuid5 namespace for attestations
+ATTEST_METHODS = {"EXAMINE": "Examined the setting", "INTERVIEW": "Interviewed the administrator"}
+AI_HEALTH_TTL = 300    # seconds before the AI connection is checked again
+
 
 # --- AI -----------------------------------------------------------------------
 def ai_problem():
@@ -140,7 +168,21 @@ def ai_problem():
     missing = [v for v in ENV_VARS if not os.environ.get(v)]
     if missing:
         return f"Azure OpenAI is not configured. Add {', '.join(missing)} to `.env` (see `.env.example`)."
+    health = ai_health(os.environ["AZURE_OPENAI_ENDPOINT"], os.environ["AZURE_OPENAI_DEPLOYMENT"])
+    if not health["ok"]:
+        return f"Azure OpenAI is configured but not answering ({health['detail']})."
     return None
+
+
+@st.cache_data(ttl=AI_HEALTH_TTL, show_spinner="Checking the AI connection…")
+def ai_health(endpoint, deployment):
+    """One tiny request, cached per endpoint and deployment, so "AI on" means it actually answers.
+    The key is not part of the cache key; "Check again" clears the cache after .env changes."""
+    return ai_assistant.health_check()
+
+
+def recheck_ai():
+    ai_health.clear()
 
 
 def friendly_error(exc):
@@ -224,23 +266,28 @@ def pipeline_message(stderr):
 
 def process_scan(name, raw):
     """Validate a scan file and run it through the pipeline. Returns (Assistant over the new findings,
-    ScubaGear's result per policy).
+    ScubaGear's result per policy, {OSCAL file name: parsed document}).
 
     Raises ValueError with a message for the user when the file is rejected."""
     results = scan_results(check_scan(name, raw))
     env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     with tempfile.TemporaryDirectory(prefix="scuba-upload-") as tmp:
         tmp = Path(tmp)
-        (tmp / "scuba-results.json").write_bytes(raw)
+        (tmp / SCAN_FILE).write_bytes(raw)
         # The builder links its outputs to its inputs by relative path, which fails on Windows when the
         # temp folder and the repo are on different drives, so every file it links to lives in tmp.
         combine_catalogs(CONTROLS_DIR, tmp / "catalog.json")
         steps = [
             ("convert the scan to OSCAL", [
-                ROOT / "pipeline" / "make_assessment_results.py", "--results", tmp / "scuba-results.json",
+                ROOT / "pipeline" / "make_assessment_results.py", "--results", tmp / SCAN_FILE,
                 "--catalog", tmp / "catalog.json", "--out", tmp / "assessment-results.json",
                 "--plan-out", tmp / "assessment-plan.json",
                 "--allow-missing"]),  # controls the scan has no record for come out NOT_ASSESSED
+            ("select the controls in scope", [
+                ROOT / "pipeline" / "make_profile.py", "--catalog", tmp / "catalog.json", "--out", tmp / "profile.json"]),
+            ("build the POA&M", [   # writes nothing when every control passed
+                ROOT / "pipeline" / "make_poam.py", "--assessment-results", tmp / "assessment-results.json",
+                "--catalog", tmp / "catalog.json", "--out", tmp / "poam.json"]),
             ("compare the scan with the SCuBA catalog", [
                 ROOT / "comparison" / "compare_oscal.py", "--scuba", CONTROLS_DIR,
                 "--scubagear", tmp / "assessment-results.json", "--output", tmp / "findings.json"]),
@@ -254,7 +301,8 @@ def process_scan(name, raw):
             if r.returncode != 0:
                 log.error("Upload pipeline step failed (%s): %s", label, r.stderr)
                 raise ValueError(f"Couldn't {label}: {pipeline_message(r.stderr)}")
-        return Assistant(tmp / "findings.json"), results  # reads everything it needs now, so the folder can go
+        oscal = {f: json.loads((tmp / f).read_text(encoding="utf-8")) for f, _, _ in OSCAL_FILES if (tmp / f).exists()}
+        return Assistant(tmp / "findings.json"), results, oscal  # reads everything it needs now, so the folder can go
 
 
 def reset_for_new_data():
@@ -265,13 +313,14 @@ def reset_for_new_data():
     st.session_state.pending = None
     st.session_state.report = None
     st.session_state.report_error = None
+    st.session_state.attestations = {}
 
 
 def load_scan(name, raw):
     """Process a scan and, if it is accepted, make it this session's scan."""
     try:
         with st.spinner("Processing the scan…"):
-            new_assistant, results = process_scan(name, raw)
+            new_assistant, results, oscal = process_scan(name, raw)
     except ValueError as exc:
         st.session_state.upload_error = str(exc)
         return
@@ -279,7 +328,8 @@ def load_scan(name, raw):
         log.exception("Could not process the scan")
         st.session_state.upload_error = "The scan couldn't be processed. Check that the file is ScubaGear output."
         return
-    st.session_state.upload = {"name": name, "assistant": new_assistant, "scan_results": results}
+    st.session_state.upload = {"name": name, "assistant": new_assistant, "scan_results": results,
+                               "oscal": oscal, "raw": raw}
     st.session_state.upload_error = None
     reset_for_new_data()
     st.session_state.flash = f"Loaded the scan for {new_assistant.info.get('tenant') or 'your tenant'}."
@@ -307,16 +357,19 @@ def format_time(iso):
         return iso or "unknown"
 
 
-def generate_report(assistant):
-    """Have the AI write the report, then build the PDF. Keeps the result, or the error, in session state."""
+def generate_report(assistant, use_ai=True):
+    """Have the AI write the analysis (unless use_ai is False), then build the PDF. Without the AI the
+    PDF holds the verified results and the SCuBA guidance only. Keeps the result, or the error, in session state."""
     st.session_state.report_requested = False
     st.session_state.report_error = None
-    try:
-        reply = assistant.compliance_report()
-    except Exception as exc:
-        log.exception("Compliance report request failed")
-        st.session_state.report_error = friendly_error(exc)
-        return
+    reply = None
+    if use_ai:
+        try:
+            reply = assistant.compliance_report()
+        except Exception as exc:
+            log.exception("Compliance report request failed")
+            st.session_state.report_error = friendly_error(exc)
+            return
     try:
         generated = datetime.now(timezone.utc)
         pdf = build_pdf(reply, assistant.findings, assistant.info, assistant.summary, generated)
@@ -324,7 +377,7 @@ def generate_report(assistant):
         log.exception("Could not build the report PDF")
         st.session_state.report_error = "The AI wrote the report, but the PDF could not be built. Try again."
         return
-    st.session_state.report = {"pdf": pdf, "generated": generated,
+    st.session_state.report = {"pdf": pdf, "generated": generated, "ai": reply is not None,
                                "file_name": report_file_name(assistant.info.get("tenant"), generated)}
 
 
@@ -335,6 +388,186 @@ def report_file_name(tenant, generated):
     slashes, colons...) becomes a hyphen. The time has no colons, which Windows file names forbid."""
     safe = re.sub(r"[^A-Za-z0-9._-]+", "-", tenant or "").strip("-.") or "tenant"
     return f"{safe}-scuba-compliance-report-{generated:%Y-%m-%d}-{generated:%H%M%S}.pdf"
+
+
+# --- OSCAL files and attestations ------------------------------------------------
+def attestation_observation(control_id, a, ar_uuid):
+    """A person's check of a control ScubaGear could not evaluate, as an OSCAL observation."""
+    return {
+        "uuid": str(uuid.uuid5(ATTEST_NS, f"{ar_uuid}:{control_id}:{a['method']}:{a['date']}:{a['reviewer']}:{a['result']}")),
+        "title": f"{control_id} manual check: {a['result']}",
+        "description": a["note"] or f"{a['reviewer']} recorded {control_id} as {a['result']}.",
+        "props": [{"name": "scuba-policy-id", "value": control_id, "ns": "https://scuba.example/ns"},
+                  {"name": "attested-result", "value": a["result"], "ns": "https://scuba.example/ns"}],
+        "methods": [a["method"]],
+        "types": ["finding"],
+        "collected": f"{a['date']}T00:00:00+00:00",
+        "remarks": f"Attested by {a['reviewer']}. ScubaGear did not evaluate this control; this is a human check, "
+                   "not a scan result.",
+    }
+
+
+def assessment_results_with_attestations(doc, attestations):
+    """The assessment results with each attestation added as an observation. A copy; the scan's own
+    findings are unchanged."""
+    if not attestations:
+        return doc
+    doc = json.loads(json.dumps(doc))
+    ar = doc["assessment-results"]
+    ar["results"][0].setdefault("observations", []).extend(
+        attestation_observation(cid, a, ar["uuid"]) for cid, a in sorted(attestations.items()))
+    return doc
+
+
+def oscal_documents():
+    """{file name: document} for this scan, attestations included."""
+    docs = dict(st.session_state.upload.get("oscal") or {})
+    if "assessment-results.json" in docs:
+        docs["assessment-results.json"] = assessment_results_with_attestations(
+            docs["assessment-results.json"], st.session_state.attestations)
+    return docs
+
+
+@st.cache_data(show_spinner=False, max_entries=64)
+def validation_of(text):
+    return validate(json.loads(text))
+
+
+def oscal_zip(docs, raw):
+    """Every OSCAL file plus the original scan (the back-matter links to it), as one zip."""
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for name, doc in docs.items():
+            z.writestr(name, json.dumps(doc, indent=2))
+        z.writestr(SCAN_FILE, raw)
+    return buf.getvalue()
+
+
+def oscal_chain(f, docs):
+    """[(model, what, uuid or id)] linking one control through the OSCAL files."""
+    steps = [("Catalog", "control", f.oscal_control_id or f.control_id.lower())]
+    profile = docs.get("profile.json", {}).get("profile", {})
+    selected = [i for imp in profile.get("imports", []) for sel in imp.get("include-controls", [])
+                for i in sel.get("with-ids", [])]
+    if profile:
+        steps.append(("Profile", "selects it" if (f.oscal_control_id or f.control_id.lower()) in selected
+                      else "does not select it", profile.get("uuid")))
+    if f.observation_uuid:
+        steps.append(("Assessment Results", "observation (the evidence)", f.observation_uuid))
+    if f.finding_uuid:
+        steps.append(("Assessment Results", "finding", f.finding_uuid))
+    if f.risk_uuid:
+        steps.append(("Assessment Results", "risk", f.risk_uuid))
+    poam = docs.get("poam.json", {}).get("plan-of-action-and-milestones", {})
+    item = next((i for i in poam.get("poam-items", [])
+                 if any(r.get("finding-uuid") == f.finding_uuid for r in i.get("related-findings", []))), None)
+    if item:
+        steps.append(("POA&M", "plan item", item["uuid"]))
+    return steps
+
+
+def oscal_ids_caption(f):
+    parts = [f"control `{f.oscal_control_id or f.control_id.lower()}`"]
+    parts += [f"{kind} `{u}`" for kind, u in (("finding", f.finding_uuid), ("observation", f.observation_uuid),
+                                              ("risk", f.risk_uuid)) if u]
+    st.caption("OSCAL: " + "; ".join(parts))
+
+
+def save_attestation(control_id):
+    k = safe_key(control_id)
+    reviewer = (st.session_state.get(f"att_reviewer_{k}") or "").strip()
+    if not reviewer:
+        st.session_state.attest_error = "Enter who checked the control."
+    else:
+        st.session_state.attest_error = None
+        st.session_state.attestations[control_id] = {
+            "result": st.session_state[f"att_result_{k}"], "method": st.session_state[f"att_method_{k}"],
+            "reviewer": reviewer, "note": (st.session_state.get(f"att_note_{k}") or "").strip(),
+            "date": st.session_state[f"att_date_{k}"].isoformat()}
+    open_control(control_id)   # submitting reruns the page; keep the dialog open
+
+
+def remove_attestation(control_id):
+    st.session_state.attestations.pop(control_id, None)
+    open_control(control_id)
+
+
+def attest_panel(f):
+    """Record a human check of a control ScubaGear could not evaluate."""
+    a = st.session_state.attestations.get(f.control_id)
+    if a:
+        st.success(f"**Attested {a['result']}** by {a['reviewer']} on {a['date']} "
+                   f"({ATTEST_METHODS[a['method']].lower()}). {a['note']}", icon=":material/how_to_reg:")
+        st.caption("Added to the downloaded assessment results as an OSCAL observation. The scan's status stays "
+                   "Not assessed.")
+        st.button("Remove attestation", key=f"att_remove_{safe_key(f.control_id)}", type="tertiary",
+                  on_click=remove_attestation, args=(f.control_id,))
+        return
+    k = safe_key(f.control_id)
+    with st.expander("Attest this control"):
+        st.caption("Checked this by hand? Record the result. It is added to the OSCAL assessment results as a "
+                   "manual observation; the scan's status does not change.")
+        with st.form(f"att_form_{k}", border=False):
+            c1, c2 = st.columns(2)
+            c1.radio("Result", ["Pass", "Fail"], key=f"att_result_{k}", horizontal=True)
+            c2.selectbox("Method", list(ATTEST_METHODS), format_func=ATTEST_METHODS.get, key=f"att_method_{k}")
+            c1.text_input("Checked by", key=f"att_reviewer_{k}", placeholder="Name and role")
+            c2.date_input("Date checked", value=date.today(), key=f"att_date_{k}", max_value=date.today())
+            st.text_area("Note", key=f"att_note_{k}", placeholder="What was checked and where", height=80)
+            st.form_submit_button("Save attestation", on_click=save_attestation, args=(f.control_id,))
+    if st.session_state.get("attest_error"):
+        st.error(st.session_state.attest_error, icon=":material/error:")
+        st.session_state.attest_error = None
+
+
+def render_oscal_tab():
+    docs = oscal_documents()
+    raw = st.session_state.upload.get("raw") or b""
+    checks = {name: validation_of(json.dumps(doc)) for name, doc in docs.items()}
+    valid = sum(c["valid"] for c in checks.values())
+    st.html(f'<p class="scb-verdict">{len(docs)} OSCAL files, {valid} of them valid against OSCAL 1.1.2.</p>')
+    st.caption("Everything on this page is built from the scan by the pipeline, not by the AI. Each file is checked "
+               "against the OSCAL 1.1.2 models (generated from the NIST schemas), and no uuid is used twice.")
+    st.download_button("Download all OSCAL files (.zip)", data=oscal_zip(docs, raw),
+                       file_name=f"{re.sub(r'[^A-Za-z0-9._-]+', '-', info.get('tenant') or 'tenant')}-scuba-oscal.zip",
+                       mime="application/zip", icon=":material/folder_zip:", type="primary", on_click="ignore")
+    for name, model, what in OSCAL_FILES:
+        doc = docs.get(name)
+        with st.container(border=True):
+            if doc is None:
+                st.markdown(f"**{model}**")
+                st.caption("Not produced: every assessed control passed, so there is nothing to plan.")
+                continue
+            c = checks[name]
+            with st.container(horizontal=True, vertical_alignment="center"):
+                st.markdown(f"**{model}**", width="content")
+                if c["valid"]:
+                    st.badge(f"Valid OSCAL {c['oscal_version']}", color="green", icon=":material/verified:")
+                else:
+                    st.badge("Not valid", color="red", icon=":material/error:")
+            body = next(iter(doc.values()))
+            st.caption(f"{what}. {c['title'] or ''}, version {c['version'] or '?'}, generated "
+                       f"{format_time(body.get('metadata', {}).get('last-modified'))}.")
+            st.markdown(f"UUID `{c['uuid'] or ''}`")
+            if name == "assessment-results.json" and st.session_state.attestations:
+                st.caption(f"Includes {len(st.session_state.attestations)} manual attestation(s) as observations.")
+            if not c["valid"]:
+                st.error("\n".join(f"- {e}" for e in c["errors"][:10]), icon=":material/error:")
+            st.download_button("Download", data=json.dumps(doc, indent=2), file_name=name, mime="application/json",
+                               icon=":material/download:", key=f"dl_{name}", type="tertiary", on_click="ignore")
+            with st.expander("View JSON"):
+                st.json(doc, expanded=2)
+
+    st.subheader("Follow one control through the chain", anchor=False)
+    st.caption("From the catalog control to its POA&M item, linked by uuid.")
+    options = failures or [f for f in findings if f.finding_uuid] or findings
+    chosen = st.selectbox("Control", options, format_func=lambda f: f"{f.control_id}  {f.title}",
+                          key="chain_control", width=520)
+    if chosen:
+        st.dataframe([{"OSCAL file": m, "Record": what, "UUID or id": u} for m, what, u in oscal_chain(chosen, docs)],
+                     hide_index=True, column_config={"OSCAL file": st.column_config.TextColumn(width=170),
+                                                     "Record": st.column_config.TextColumn(width=210),
+                                                     "UUID or id": st.column_config.TextColumn(width="large")})
 
 
 # --- Rendering ----------------------------------------------------------------
@@ -364,8 +597,9 @@ def scan_age_days(iso):
 
 def ai_off_note():
     """Says plainly what needs the AI and that everything else still works."""
-    st.info(f"**AI features are off.** Questions, analyst notes and the PDF report need Azure OpenAI. {problem} "
-            "Everything else works without it.", icon=":material/cloud_off:")
+    st.info(f"**AI features are off.** Questions and analyst notes need Azure OpenAI. {problem} "
+            "Everything else works without it, and the PDF report is built from the verified results only.",
+            icon=":material/cloud_off:")
 
 
 def styled_status(rows):
@@ -452,6 +686,9 @@ def control_facts(f, key_prefix):
         if f.nist:
             st.caption("Related NIST SP 800-53 controls: " + ", ".join(n.replace("NIST SP 800-53 Rev 5 ", "")
                                                                      for n in f.nist))
+        oscal_ids_caption(f)
+        if f.status == "NOT ASSESSED" and key_prefix == "dialog":
+            attest_panel(f)
     if margin is not None:
         with margin:
             analyst_note(f, key_prefix)
@@ -529,6 +766,8 @@ def render_exchange(question, answer, index):
                 st.button(f"{fact['control_id']}  {fact['title']}", key=f"cite_{index}_{i}", type="tertiary",
                           on_click=open_control, args=(fact["control_id"],))
                 st.markdown(f":{color}[{label}]", width="content")
+                if fact.get("finding_uuid"):
+                    st.caption(f"OSCAL finding {fact['finding_uuid']}", width="content")
 
 
 # --- State and callbacks ------------------------------------------------------
@@ -549,6 +788,9 @@ if "upload" not in st.session_state:
     st.session_state.upload_file_id = None
     st.session_state.load_sample = False
     st.session_state.flash = None              # toast to show after switching to the dashboard
+if "attestations" not in st.session_state:
+    st.session_state.attestations = {}         # control id -> manual check of a not-assessed control
+    st.session_state.attest_error = None
 
 
 def queue(kind, prompt, control_id=None):
@@ -598,14 +840,18 @@ with st.sidebar:
     st.caption("Checks a Microsoft Entra ID tenant against the CISA SCuBA baseline.")
     if problem:
         st.badge("AI offline", color="red")
-        st.caption("Questions, analyst notes and the PDF report are unavailable.")
+        st.caption("Questions and analyst notes are unavailable. The PDF report shows verified results only.")
+        st.button("Check again", type="tertiary", on_click=recheck_ai)
+    else:
+        st.badge("AI connected", color="green")
 
 
 # --- Upload panel: shown until a scan is loaded --------------------------------
 if st.session_state.upload is None:
     st.title("SCuBA posture assistant", anchor=False)
-    st.caption("Upload the results of a ScubaGear scan to see where your Microsoft Entra ID tenant stands "
-               "against the CISA SCuBA baseline, ask questions about it, and generate a compliance report.")
+    st.caption("Turn a ScubaGear scan into validated NIST OSCAL: see where your Microsoft Entra ID tenant stands "
+               "against the CISA SCuBA baseline, what to fix first, and download the OSCAL assessment results and "
+               "POA&M. Ask questions and generate a report, with every status taken from the scan.")
     with st.container(border=True):
         st.subheader("Upload your ScubaGear results", anchor=False)
         st.markdown("Choose the **ScubaResults JSON file** from your ScubaGear output folder. "
@@ -633,7 +879,9 @@ if st.session_state.upload is None:
         "- **Overview:** every policy in the baseline at a glance, and what to fix first\n"
         "- **Findings:** each failed control with what the scan found and how to fix it\n"
         "- **Questions:** ask about the scan; answers list the controls they rely on\n"
-        "- **Report:** a PDF compliance report to share")
+        "- **Report:** a PDF compliance report to share\n"
+        "- **OSCAL:** the catalog, profile, assessment plan, assessment results and POA&M, validated and ready "
+        "to download")
     if problem:
         ai_off_note()
     st.caption("Your file is processed in memory on this server and never saved. Only you can see it, and it is "
@@ -670,7 +918,7 @@ with st.sidebar:
 # The tenant is the subject of the page, so it is the title.
 st.title(info.get("domain") or info.get("tenant") or "Your tenant", anchor=False)
 st.caption(f"Microsoft Entra ID assessed against the CISA SCuBA baseline, from a ScubaGear "
-           f"{info.get('tool_version') or ''} scan on {scanned}. Statuses come from the scan; "
+           f"{info.get('tool_version') or ''} scan on {scanned}, converted to OSCAL. Statuses come from the scan; "
            "anything the AI writes is labelled as AI.")
 if age is not None and age > STALE_SCAN_DAYS:
     st.warning(f"**This scan is {age} days old.** The tenant's settings may have changed since; re-run "
@@ -678,16 +926,17 @@ if age is not None and age > STALE_SCAN_DAYS:
 if problem:
     ai_off_note()
 
-tab_overview, tab_findings, tab_chat, tab_report = st.tabs(
-    [TAB_OVERVIEW, TAB_FINDINGS, TAB_CHAT, TAB_REPORT], key="tab", on_change="rerun")
+tab_overview, tab_findings, tab_chat, tab_report, tab_oscal = st.tabs(
+    [TAB_OVERVIEW, TAB_FINDINGS, TAB_CHAT, TAB_REPORT, TAB_OSCAL], key="tab", on_change="rerun")
 
 # Overview: the verdict, the whole baseline at a glance, and what to fix first
 with tab_overview:
+    verdict = (f"{summary['total']} controls: {summary['passed']} pass, {summary['failed']} fail, "
+               f"{summary['not_assessed']} not assessed.")
     if failures:
-        verdict = (f"{summary['failed']} of {summary['assessed']} assessed controls fail. "
-                   f"{len(high_priority)} of them {'is' if len(high_priority) == 1 else 'are'} required (SHALL).")
-    else:
-        verdict = f"All {summary['assessed']} assessed controls pass."
+        recommended = len(failures) - len(high_priority)
+        verdict += (f" Of the failures, {len(high_priority)} {'is' if len(high_priority) == 1 else 'are'} "
+                    f"Required (SHALL) and {recommended} Recommended (SHOULD).")
     st.html(f'<p class="scb-verdict">{html.escape(verdict)}</p>')
     counts = {label: sum(result_badge(f.status, f.scuba_result)[0] == label for f in findings) for label in MAP_CLASS}
     st.html('<div class="scb-legend">' + "".join(
@@ -699,8 +948,8 @@ with tab_overview:
     st.subheader("Fix first", anchor=False)
     if failures:
         top = high_priority or failures
-        st.caption("The highest-priority failures: required (SHALL) controls that the scan found not met."
-                   if high_priority else "No required control failed; these recommended (SHOULD) controls did.")
+        st.caption("Required (SHALL) controls that the scan found not met come first."
+                   if high_priority else "No Required (SHALL) control failed; these Recommended (SHOULD) controls did.")
         for f in top[:FIX_FIRST]:
             worklist_row(f, "overview")
         st.button(f"See all {len(failures)} findings", type="tertiary", on_click=goto, args=(TAB_FINDINGS,))
@@ -717,14 +966,19 @@ with tab_overview:
         st.subheader(f"Not assessed ({len(unassessed)})", anchor=False)
         st.caption("ScubaGear returned no pass or fail for these controls, so their status is unknown"
                    + (": " + " and ".join(p for p in parts if p) if any(parts) else "") + ". Check them by hand.")
+        attested = st.session_state.attestations
         st.dataframe(
-            [{"Control": f.control_id, "Title": f.title, "Obligation": f.obligation, "Why": why}
+            [{"Control": f.control_id, "Title": f.title, "Obligation": f.obligation, "Why": why,
+              "Attested": (f"{attested[f.control_id]['result']} ({attested[f.control_id]['reviewer']})"
+                           if f.control_id in attested else "")}
              for f, why in zip(unassessed, reasons)],
             hide_index=True,
             column_config={"Control": st.column_config.TextColumn(width=115),
                            "Title": st.column_config.TextColumn(width="medium"),
                            "Obligation": st.column_config.TextColumn(width=95),
-                           "Why": st.column_config.TextColumn(width="large")})
+                           "Why": st.column_config.TextColumn(width="large"),
+                           "Attested": st.column_config.TextColumn(width="small")})
+        st.caption("Checked one by hand? Select it on the map above and use **Attest this control**.")
 
 # Findings: every failed control as a worklist, filterable
 with tab_findings:
@@ -732,16 +986,17 @@ with tab_findings:
         st.success("Every assessed control passed.", icon=":material/verified:")
     else:
         with st.container(horizontal=True, vertical_alignment="bottom", gap="medium"):
-            priority = st.segmented_control("Priority", ["All", "High", "Moderate"], default="All", required=True,
-                                            key="filter_priority")
+            priority = st.segmented_control("Obligation", ["All", "Required", "Recommended"], default="All",
+                                            required=True, key="filter_priority")
             area = st.selectbox("Area", ["All areas", *sorted({f.group for f in failures})], key="filter_area",
                                 width=320)
-        shown = [f for f in failures if priority in (None, "All") or f.priority == priority.lower()]
+        wanted = {"Required": "high", "Recommended": "moderate"}.get(priority)
+        shown = [f for f in failures if wanted is None or f.priority == wanted]
         shown = [f for f in shown if area == "All areas" or f.group == area]
         st.caption(f"Showing {len(shown)} of {len(failures)} failed controls. Open one to see what the scan found "
                    "and how to fix it.")
-        for level, title, explain in (("high", "High priority", "failed SHALL and SHALL NOT requirements"),
-                                      ("moderate", "Moderate priority", "ScubaGear warnings: failed SHOULD requirements")):
+        for level, title, explain in (("high", "Required (SHALL)", "failed SHALL and SHALL NOT requirements"),
+                                      ("moderate", "Recommended (SHOULD)", "ScubaGear warnings: failed SHOULD requirements")):
             group = [f for f in shown if f.priority == level]
             if group:
                 st.markdown(f"**{title} ({len(group)})**: {explain}")
@@ -817,23 +1072,27 @@ with tab_report:
         "- **Controls that passed**, **not assessed**, and an **appendix** of every control (verified results)")
     report_slot = st.container()   # filled at the end of the script, so the page renders before the slow AI call
 
+with tab_oscal:
+    render_oscal_tab()
+
 with report_slot:
-    if st.session_state.report_requested and not problem:
-        with st.spinner("The AI is writing the report. This can take a minute…"):
-            generate_report(assistant)
+    if st.session_state.report_requested:
+        with st.spinner("Building the report…" if problem else "The AI is writing the report. This can take a minute…"):
+            generate_report(assistant, use_ai=not problem)
     report = st.session_state.report
     if report:
         st.download_button("Download PDF", data=report["pdf"], file_name=report["file_name"],
                            mime="application/pdf", icon=":material/download:", type="primary", on_click="ignore")
         st.caption(f"{report['file_name']}, generated {report['generated']:%d %b %Y, %H:%M UTC}. "
-                   "AI-written; review it before sharing.")
+                   + ("Includes AI analysis; review it before sharing." if report.get("ai")
+                      else "Verified results and SCuBA guidance only, no AI analysis."))
     if st.session_state.report_error:
         st.error(st.session_state.report_error, icon=":material/error:")
     if problem:
-        st.caption("Generating a report needs the AI; see the note above.")
+        st.caption("The AI is off, so the report will hold the verified results and the SCuBA guidance only.")
     st.button("Regenerate report" if report else "Generate PDF report",
-              type="secondary" if report else "primary", disabled=bool(problem), on_click=request_report,
-              help="The AI writes the analysis; the facts come straight from the scan.")
+              type="secondary" if report else "primary", on_click=request_report,
+              help="The facts come straight from the scan; the AI, when available, writes the analysis.")
 
 # A policy selected on the map or in an answer opens its details over the page.
 if st.session_state.get("open_control"):

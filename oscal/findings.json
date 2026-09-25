@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at": "2026-09-24T18:11:14+00:00",
+    "generated_at": "2026-09-25T20:57:38+00:00",
     "scuba_sources": [
       "EntraID-catalog-full.json"
     ],
@@ -9,7 +9,9 @@
       "tenant": "tqhjy",
       "domain": "tqhjy.onmicrosoft.com",
       "scan_time": "2026-05-04T17:15:48+00:00",
-      "tool_version": "1.8.0"
+      "tool_version": "1.8.0",
+      "assessment_results_uuid": "9ab4a0df-f000-5e42-9554-48f9a85c1ce4",
+      "result_uuid": "1274f231-b1cf-585a-8236-d5125207fa12"
     }
   },
   "summary": {
@@ -43,6 +45,13 @@
       "nist": [
         "NIST SP 800-53 Rev 5 CM-7"
       ],
+      "oscal": {
+        "finding_uuid": "f7dcb24a-ec99-56d5-95b7-4b33cb8e91d0",
+        "observation_uuids": [
+          "0f1aeea1-f411-5087-8040-557f2e00fcce"
+        ],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -70,6 +79,13 @@
         "NIST SP 800-53 Rev 5 AC-2(12)",
         "NIST SP 800-53 Rev 5 AC-2(13)"
       ],
+      "oscal": {
+        "finding_uuid": "9b59699f-91ef-52eb-b706-8a0769159a89",
+        "observation_uuids": [
+          "3b4670db-ce9e-5c2d-883e-28d8a736e15c"
+        ],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -94,6 +110,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-2(12)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -121,6 +142,13 @@
         "NIST SP 800-53 Rev 5 AC-2(12)",
         "NIST SP 800-53 Rev 5 AC-2(13)"
       ],
+      "oscal": {
+        "finding_uuid": "a8a59411-385e-57fc-961d-c70b78faa592",
+        "observation_uuids": [
+          "7e67d646-f6f7-5ee2-8399-2d87de850c5e"
+        ],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -149,6 +177,11 @@
         "NIST SP 800-53 Rev 5 IA-5g",
         "NIST SP 800-53 Rev 5 IA-2(8)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -174,6 +207,11 @@
         "NIST SP 800-53 Rev 5 IA-2(1)",
         "NIST SP 800-53 Rev 5 IA-2(2)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -203,6 +241,11 @@
         "NIST SP 800-53 Rev 5 IA-2(8)",
         "NIST SP 800-53 Rev 5 IA-2(13)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -227,6 +270,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 CM-7"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -252,6 +300,11 @@
         "NIST SP 800-53 Rev 5 CM-7b",
         "NIST SP 800-53 Rev 5 IA-5c"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -279,6 +332,11 @@
         "NIST SP 800-53 Rev 5 IA-5g",
         "NIST SP 800-53 Rev 5 IA-2(8)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -304,6 +362,11 @@
         "NIST SP 800-53 Rev 5 AC-20b",
         "NIST SP 800-53 Rev 5 IA-3"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -331,6 +394,15 @@
         "NIST SP 800-53 Rev 5 AC-20b",
         "NIST SP 800-53 Rev 5 IA-3"
       ],
+      "oscal": {
+        "finding_uuid": "9608cafc-d70b-5e6b-bd31-85be980bc4bd",
+        "observation_uuids": [
+          "a29f89d9-e68b-55bb-a736-385bb953b563"
+        ],
+        "risk_uuids": [
+          "23ac85ec-fb37-5956-af24-8fdaaf23a807"
+        ]
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -355,6 +427,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 CM-7"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -379,6 +456,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AU-4"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -404,6 +486,11 @@
         "NIST SP 800-53 Rev 5 AC-6(10)",
         "NIST SP 800-53 Rev 5 CM-5"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -431,6 +518,15 @@
         "NIST SP 800-53 Rev 5 AC-6(10)",
         "NIST SP 800-53 Rev 5 CM-5"
       ],
+      "oscal": {
+        "finding_uuid": "d18f7ffb-f0cb-5b93-8289-b2c5a2806bf8",
+        "observation_uuids": [
+          "c73c579d-eb6b-500b-a4fa-2dc1a180eca3"
+        ],
+        "risk_uuids": [
+          "b660cad9-4711-5425-827d-69438ba33942"
+        ]
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -455,6 +551,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 CM-4"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -479,6 +580,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 IA-5"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -504,6 +610,11 @@
         "NIST SP 800-53 Rev 5 IA-5",
         "NIST SP 800-53 Rev 5 SC-12"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -529,6 +640,11 @@
         "NIST SP 800-53 Rev 5 SC-12",
         "NIST SP 800-53 Rev 5 IA-5"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -553,6 +669,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 IA-5(1)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -579,6 +700,13 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-6(5)"
       ],
+      "oscal": {
+        "finding_uuid": "0b5078f9-9d0d-5676-a6dd-d4fc3b43bd4c",
+        "observation_uuids": [
+          "3bf678c3-0a21-573e-89e7-351fcbf5bdf7"
+        ],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -603,6 +731,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-5"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -627,6 +760,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-6(5)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -653,6 +791,15 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-2"
       ],
+      "oscal": {
+        "finding_uuid": "85fa0fbd-8c33-5296-a0f6-93bc420c343b",
+        "observation_uuids": [
+          "b44ea913-044d-50ae-84da-1e41eae33ff1"
+        ],
+        "risk_uuids": [
+          "ef482384-23f0-58e7-9a2c-0ccdb602936b"
+        ]
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -677,6 +824,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-2"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -701,6 +853,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-6(1)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -725,6 +882,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-2(1)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -749,6 +911,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-6(9)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -773,6 +940,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-6(9)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -799,6 +971,13 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-6"
       ],
+      "oscal": {
+        "finding_uuid": "1a94e482-3b58-5997-bdb1-3b1801e81aea",
+        "observation_uuids": [
+          "32e88462-62a7-5199-bee3-ffe662fae840"
+        ],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -823,6 +1002,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-6(10)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -847,6 +1031,11 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-3"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -873,6 +1062,11 @@
         "NIST SP 800-53 Rev 5 AC-6",
         "NIST SP 800-53 Rev 5 CM-7(4)"
       ],
+      "oscal": {
+        "finding_uuid": null,
+        "observation_uuids": [],
+        "risk_uuids": []
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -902,6 +1096,15 @@
         "NIST SP 800-53 Rev 5 AC-20b",
         "NIST SP 800-53 Rev 5 IA-3"
       ],
+      "oscal": {
+        "finding_uuid": "9608cafc-d70b-5e6b-bd31-85be980bc4bd",
+        "observation_uuids": [
+          "a29f89d9-e68b-55bb-a736-385bb953b563"
+        ],
+        "risk_uuids": [
+          "23ac85ec-fb37-5956-af24-8fdaaf23a807"
+        ]
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -929,6 +1132,15 @@
         "NIST SP 800-53 Rev 5 AC-6(10)",
         "NIST SP 800-53 Rev 5 CM-5"
       ],
+      "oscal": {
+        "finding_uuid": "d18f7ffb-f0cb-5b93-8289-b2c5a2806bf8",
+        "observation_uuids": [
+          "c73c579d-eb6b-500b-a4fa-2dc1a180eca3"
+        ],
+        "risk_uuids": [
+          "b660cad9-4711-5425-827d-69438ba33942"
+        ]
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"
@@ -955,6 +1167,15 @@
       "nist": [
         "NIST SP 800-53 Rev 5 AC-2"
       ],
+      "oscal": {
+        "finding_uuid": "85fa0fbd-8c33-5296-a0f6-93bc420c343b",
+        "observation_uuids": [
+          "b44ea913-044d-50ae-84da-1e41eae33ff1"
+        ],
+        "risk_uuids": [
+          "ef482384-23f0-58e7-9a2c-0ccdb602936b"
+        ]
+      },
       "source": {
         "scuba": "EntraID-catalog-full.json",
         "scubagear": "assessment-results.json"

@@ -1,0 +1,67 @@
+{
+  "profile": {
+    "uuid": "ed55f99b-603f-5e3c-bad9-c8a39c0a96f2",
+    "metadata": {
+      "title": "SCuBA Microsoft Entra ID (MS.AAD) profile: all policies",
+      "last-modified": "2026-09-25T20:55:55+00:00",
+      "version": "0.1.0",
+      "oscal-version": "1.1.2",
+      "links": [
+        {
+          "href": "Controls/EntraID-catalog-full.json",
+          "rel": "reference",
+          "text": "CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline - all policies"
+        }
+      ],
+      "remarks": "Selects 34 of 34 controls from the catalog."
+    },
+    "imports": [
+      {
+        "href": "Controls/EntraID-catalog-full.json",
+        "include-controls": [
+          {
+            "with-ids": [
+              "ms.aad.1.1v1",
+              "ms.aad.2.1v1",
+              "ms.aad.2.2v1",
+              "ms.aad.2.3v1",
+              "ms.aad.3.1v1",
+              "ms.aad.3.2v2",
+              "ms.aad.3.3v2",
+              "ms.aad.3.4v1",
+              "ms.aad.3.5v2",
+              "ms.aad.3.6v1",
+              "ms.aad.3.7v1",
+              "ms.aad.3.8v1",
+              "ms.aad.3.9v1",
+              "ms.aad.4.1v1",
+              "ms.aad.5.1v1",
+              "ms.aad.5.2v1",
+              "ms.aad.5.3v1",
+              "ms.aad.5.5v1",
+              "ms.aad.5.6v1",
+              "ms.aad.5.7v1",
+              "ms.aad.6.1v1",
+              "ms.aad.7.1v1",
+              "ms.aad.7.2v1",
+              "ms.aad.7.3v1",
+              "ms.aad.7.4v1",
+              "ms.aad.7.5v1",
+              "ms.aad.7.6v1",
+              "ms.aad.7.7v1",
+              "ms.aad.7.8v1",
+              "ms.aad.7.9v1",
+              "ms.aad.8.1v1",
+              "ms.aad.8.2v1",
+              "ms.aad.8.3v1",
+              "ms.aad.9.1v1"
+            ]
+          }
+        ]
+      }
+    ],
+    "merge": {
+      "as-is": true
+    }
+  }
+}

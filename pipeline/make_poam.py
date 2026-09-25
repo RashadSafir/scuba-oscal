@@ -10,6 +10,7 @@ For every not-satisfied finding in the results, the POA&M gets:
                                link resolves inside this one file. The risk also gets the
                                catalog's remediation steps.
 Satisfied findings are left out: nothing to fix.
+The results' back-matter (the original scan file and its SHA-256) is copied too, so evidence links resolve.
 
 Priority comes from the catalog's obligation for the control (not the scan's Criticality field,
 which the catalog is the authority over). See PRIORITY below; change the mapping there.
@@ -99,7 +100,8 @@ def build(results_path, catalog_path, out_dir="."):
             links=[Link(href=rel_href(results_path, out_dir), rel="reference",
                         text="Assessment results this POA&M was built from"),
                    Link(href=rel_href(catalog_path, out_dir), rel="reference", text=catalog_title)]),
-        observations=used_obs, risks=used_risks, findings=findings, poam_items=items)
+        observations=used_obs, risks=used_risks, findings=findings, poam_items=items,
+        back_matter=ar.back_matter)   # the scan file (with its hash) that the observations link to
 
 
 def main():

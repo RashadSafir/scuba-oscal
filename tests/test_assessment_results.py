@@ -325,3 +325,14 @@ def test_allow_missing_skips_a_control_missing_from_the_scan(tmp_path):
     targets = {f["target"]["target-id"] for f in doc["findings"]}
     assert "ms.aad.1.1v1_smt" not in targets             # no verdict is invented for it
     assert "ms.aad.2.1v1_smt" in targets
+
+
+def test_the_scan_file_is_in_back_matter_with_its_sha256(out_file):
+    import hashlib
+    doc = read(out_file)["assessment-results"]
+    (res,) = doc["back-matter"]["resources"]
+    (rlink,) = res["rlinks"]
+    assert (out_file.parent / rlink["href"]).exists()
+    assert rlink["hashes"] == [{"algorithm": "SHA-256", "value": hashlib.sha256(RESULTS.read_bytes()).hexdigest()}]
+    for o in doc["results"][0]["observations"]:          # every observation points at that resource
+        assert {"href": f"#{res['uuid']}", "rel": "evidence", "text": "Original ScubaGear results file"} in o["links"]

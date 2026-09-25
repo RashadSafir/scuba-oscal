@@ -212,3 +212,10 @@ def test_a_finding_pointing_at_nothing_is_refused(built, tmp_path):
 def test_poam_file_links_resolve(built):
     for link in built["poam"]["metadata"]["links"]:
         assert (built["out"].parent / link["href"]).exists(), f"dangling link: {link['href']}"
+
+
+def test_evidence_links_resolve_to_the_scan_file_in_back_matter(built):
+    doc = read(built["out"])["plan-of-action-and-milestones"]
+    resources = {r["uuid"] for r in doc["back-matter"]["resources"]}
+    links = [l["href"] for o in doc["observations"] for l in o.get("links", [])]
+    assert links and all(h.startswith("#") and h[1:] in resources for h in links)

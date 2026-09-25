@@ -180,3 +180,13 @@ def test_real_repo_files(tmp_path):
     assert len(doc["findings"]) == s["failed"] + s["warnings"]
     assert s["not_assessed"] == s["total_controls"] - len(raw)
     assert s["unmatched_results"] == 0
+
+
+def test_assessments_carry_the_oscal_uuids_they_came_from(tmp_path):
+    code, doc = compare(tmp_path, catalog(control("ms.aad.1.1v1", "Block legacy"), control("ms.aad.2.1v1", "Risky users")),
+                        results(("ms.aad.1.1v1", "not-satisfied", "Fail")))
+    assert code == 0
+    assessed, missing = doc["assessments"]
+    assert assessed["oscal"] == {"finding_uuid": "f-0", "observation_uuids": ["obs-0"], "risk_uuids": []}
+    assert missing["oscal"] == {"finding_uuid": None, "observation_uuids": [], "risk_uuids": []}
+    assert doc["metadata"]["scan"]["assessment_results_uuid"] == "a"

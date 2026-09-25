@@ -84,7 +84,7 @@ def result_tag(f):
 
 
 def priority_tag(priority):
-    return {"high": ("High priority", RED, RED_BG), "moderate": ("Moderate priority", AMBER, AMBER_BG)}[priority]
+    return {"high": ("Required (SHALL)", RED, RED_BG), "moderate": ("Recommended (SHOULD)", AMBER, AMBER_BG)}[priority]
 
 
 class ReportPDF(FPDF):
@@ -237,8 +237,8 @@ def _cover(pdf, info, summary, failures, generated_at):
             row.cell(plain(value))
     pdf.ln(6)
 
-    tiles = [("Passing", f"{summary['passed']} of {summary['assessed']}", GREEN),
-             ("Failing", summary["failed"], RED),
+    tiles = [("Pass", summary["passed"], GREEN),
+             ("Fail", summary["failed"], RED),
              ("Not assessed", summary["not_assessed"], MUTED),
              ("Total controls", summary["total"], NAVY)]
     pdf.set_draw_color(*RULE)
@@ -254,9 +254,9 @@ def _cover(pdf, info, summary, failures, generated_at):
     moderate = len(failures) - high
     pdf.set_font("helvetica", "", 9)
     pdf.set_text_color(*MUTED)
-    pdf.cell(pdf.get_string_width("Failing controls by priority:") + 3, 5, "Failing controls by priority:")
-    pdf.tag(f"{high} high", RED, RED_BG)
-    pdf.tag(f"{moderate} moderate", AMBER, AMBER_BG)
+    pdf.cell(pdf.get_string_width("Failing controls:") + 3, 5, "Failing controls:")
+    pdf.tag(f"{high} Required (SHALL)", RED, RED_BG)
+    pdf.tag(f"{moderate} Recommended (SHOULD)", AMBER, AMBER_BG)
     pdf.ln(10)
 
     pdf.note("Sections marked AI analysis were written by an AI model from the verified results and are "
@@ -273,8 +273,8 @@ def _scope(pdf, info, summary):
              f"compared, control by control, with the {summary['total']}-control SCuBA catalog.")
     pdf.para("Every status, requirement and scan result in this report comes from that comparison; the AI does "
              "not decide whether a control passed. Priority follows each requirement's wording: a failed SHALL "
-             "or SHALL NOT requirement is high priority, and a failed SHOULD requirement (reported by ScubaGear "
-             "as a Warning) is moderate. Controls ScubaGear did not evaluate are listed as not assessed.")
+             "or SHALL NOT requirement is Required and comes first, and a failed SHOULD requirement (reported by "
+             "ScubaGear as a Warning) is Recommended. Controls ScubaGear did not evaluate are listed as not assessed.")
 
 
 def _card(pdf, f, analysis):
@@ -308,6 +308,8 @@ def _card(pdf, f, analysis):
 
     field("Requirement", f.requirement, serif=True)
     field("Scan result", f.finding or "No details recorded.")
+    if f.finding_uuid:
+        field("OSCAL finding", f.finding_uuid, color=MUTED)
 
     if analysis and (analysis.get("why_it_matters") or analysis.get("how_to_fix")):
         pdf.ln(1)
@@ -343,12 +345,12 @@ def _findings(pdf, failures, analyses):
     if not failures:
         pdf.para("No assessed control failed.")
         return
-    intro = ("One card per failed control, highest priority first. The requirement and scan result come from "
+    intro = ("One card per failed control, Required before Recommended. The requirement and scan result come from "
              "the scan; ")
     intro += ("the notes under AI analysis are the AI's explanation and suggested fix." if analyses else
               "the guidance is the SCuBA baseline's remediation text.")
     pdf.para(intro, size=9.5, color=MUTED, gap=3)
-    for level, title, color in (("high", "High priority", RED), ("moderate", "Moderate priority", AMBER)):
+    for level, title, color in (("high", "Required (SHALL)", RED), ("moderate", "Recommended (SHOULD)", AMBER)):
         group = [f for f in failures if f.priority == level]
         if not group:
             continue
@@ -393,13 +395,17 @@ def _appendix(pdf, findings):
                            "not met.   Not assessed: ScubaGear returned no result.", align="L",
                    new_x="LMARGIN", new_y="NEXT")
     pdf.ln(3)
-    pdf.control_table([[f.control_id, f.title, f.obligation, f, (f.priority or "-").capitalize()] for f in findings],
+    pdf.control_table([[f.control_id, f.title, f.obligation, f,
+                        {"high": "Required", "moderate": "Recommended"}.get(f.priority, "-")] for f in findings],
                       ["Control", "Title", "Obligation", "Status", "Priority"], (26, 71, 24, 28, 21), style_status=True)
 
 
 def build_pdf(reply, findings, info, summary, generated_at=None):
-    """reply: the dict from Assistant.compliance_report(). Returns the PDF as bytes."""
+    """reply: the dict from Assistant.compliance_report(), or None to build the report without the AI
+    (verified results and SCuBA guidance only). Returns the PDF as bytes."""
     generated_at = generated_at or datetime.now(timezone.utc)
+    offline = reply is None
+    reply = reply or {"report": None, "unverified_references": []}
     report = reply.get("report")
     failures = sorted((f for f in findings if f.status == "FAIL"), key=lambda f: f.priority != "high")
     pdf = ReportPDF(plain(f"SCuBA compliance report  |  {info.get('tenant') or ''}  |  "
@@ -407,7 +413,10 @@ def build_pdf(reply, findings, info, summary, generated_at=None):
     pdf.add_page()
     _cover(pdf, info, summary, failures, generated_at)
 
-    if report is None:
+    if offline:
+        pdf.note("Built without the AI: this report shows the verified results and the SCuBA baseline's own "
+                 "guidance only. It contains no AI analysis.", color=ACCENT, fill=PANEL)
+    elif report is None:
         pdf.note("The AI's analysis could not be read, so this report shows the verified results only. Try "
                  "generating it again.", color=AMBER, fill=AMBER_BG)
     if reply.get("unverified_references"):

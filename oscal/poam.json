@@ -3,7 +3,7 @@
     "uuid": "098f2bd9-b23b-56d3-9a00-648b23fd5c72",
     "metadata": {
       "title": "SCuBA Microsoft Entra ID (MS.AAD) Plan of Action and Milestones",
-      "last-modified": "2026-09-24T21:13:43+00:00",
+      "last-modified": "2026-09-25T20:57:58+00:00",
       "version": "0.1.0",
       "oscal-version": "1.1.2",
       "links": [
@@ -46,6 +46,13 @@
             "value": "AAD"
           }
         ],
+        "links": [
+          {
+            "href": "#e829a497-7f4a-5ae8-ad03-b7a20e9c8f51",
+            "rel": "evidence",
+            "text": "Original ScubaGear results file"
+          }
+        ],
         "methods": [
           "TEST"
         ],
@@ -86,6 +93,13 @@
             "value": "AAD"
           }
         ],
+        "links": [
+          {
+            "href": "#e829a497-7f4a-5ae8-ad03-b7a20e9c8f51",
+            "rel": "evidence",
+            "text": "Original ScubaGear results file"
+          }
+        ],
         "methods": [
           "TEST"
         ],
@@ -124,6 +138,13 @@
             "name": "scuba-product",
             "ns": "https://scuba.example/ns",
             "value": "AAD"
+          }
+        ],
+        "links": [
+          {
+            "href": "#e829a497-7f4a-5ae8-ad03-b7a20e9c8f51",
+            "rel": "evidence",
+            "text": "Original ScubaGear results file"
           }
         ],
         "methods": [
@@ -371,6 +392,27 @@
           }
         ]
       }
-    ]
+    ],
+    "back-matter": {
+      "resources": [
+        {
+          "uuid": "e829a497-7f4a-5ae8-ad03-b7a20e9c8f51",
+          "title": "ScubaGear results file",
+          "description": "The ScubaGear results report this assessment was built from (scuba_results_sample.json).",
+          "rlinks": [
+            {
+              "href": "../data/sample/scuba_results_sample.json",
+              "media-type": "application/json",
+              "hashes": [
+                {
+                  "algorithm": "SHA-256",
+                  "value": "c96a4f5358da11cd2f4abf4048024fe909a8116a4e1fbb1964c5c4e319fd0722"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
   }
 }

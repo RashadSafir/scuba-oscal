@@ -39,6 +39,9 @@ Time: the scan time is MetaData.TimestampZulu from the results file. --scan-time
 The document's own last-modified is the moment it was generated. No end time is recorded,
 because the results file does not say when the scan finished.
 
+Evidence: the original results file is recorded in back-matter as a resource with its SHA-256
+hash, so an auditor can check the evidence was not altered; every observation links to it.
+
 Ids: every uuid is derived from the scan itself (a hash of the results file plus the scan
 time), so the same scan always gives the same ids, while two different scans never share ids.
 """
@@ -55,10 +58,11 @@ from pathlib import Path
 
 from trestle.oscal.assessment_plan import AssessmentPlan, SystemComponent
 from trestle.oscal.assessment_results import AssessmentResults, ImportAp, Result
-from trestle.oscal.common import (AssessmentAssets, AssessmentPlatform, AssociatedRisk, ControlSelections,
-                                  Finding, FindingTarget, ImportSsp, Link, Metadata, ObjectiveStatus,
-                                  Observation, Property, RelatedObservation, RelevantEvidence,
-                                  ReviewedControls, Risk, SelectControlById, Status, Task, UsesComponent)
+from trestle.oscal.common import (AssessmentAssets, AssessmentPlatform, AssociatedRisk, BackMatter,
+                                  ControlSelections, Finding, FindingTarget, Hash, ImportSsp, Link, Metadata,
+                                  ObjectiveStatus, Observation, Property, RelatedObservation, RelevantEvidence,
+                                  ReviewedControls, Resource, Risk, Rlink, SelectControlById, Status, Task,
+                                  UsesComponent)
 
 NS = uuid.UUID("6f1c2d3e-0000-4000-8000-5c0ba0000002")   # namespace for our uuid5 ids
 PROP_NS = "https://scuba.example/ns"                       # same namespace the catalog uses
@@ -206,6 +210,8 @@ def build(results_path, catalog_path, scan_time, plan_href, out_dir=".", allow_m
     meta, scan = load_scan(results_path)
     uid = make_uid(results_path, scan_time)
     report = rel_href(results_path, out_dir)   # e.g. ../data/sample/scuba_results_sample.json
+    scan_resource = uid("resource", "scubagear-results")
+    scan_hash = hashlib.sha256(Path(results_path).read_bytes()).hexdigest()
 
     missing = [c for c in controls if c not in scan]
     if missing and not allow_missing:
@@ -238,6 +244,7 @@ def build(results_path, catalog_path, scan_time, plan_href, out_dir=".", allow_m
         observations.append(Observation(
             uuid=obs_id, title=f"{pid} check: {ctl['title']}", description=details,
             props=props, methods=["TEST"], types=["finding"], collected=scan_time,
+            links=[Link(href=f"#{scan_resource}", rel="evidence", text="Original ScubaGear results file")],
             relevant_evidence=[RelevantEvidence(
                 href=report,
                 description=f"ScubaGear report {meta.get('ReportUUID', '')}, {rec['product']} "
@@ -282,7 +289,12 @@ def build(results_path, catalog_path, scan_time, plan_href, out_dir=".", allow_m
                           links=[Link(href=rel_href(catalog_path, out_dir), rel="reference", text=catalog_title),
                                  Link(href=report, rel="reference", text="ScubaGear results report")]),
         import_ap=ImportAp(href=plan_href),   # the plan generated alongside these results
-        results=[result]), (len(observations), len(findings), len(risks))
+        results=[result],
+        back_matter=BackMatter(resources=[Resource(
+            uuid=scan_resource, title="ScubaGear results file",
+            description=f"The ScubaGear results report this assessment was built from ({Path(results_path).name}).",
+            rlinks=[Rlink(href=report, media_type="application/json",
+                          hashes=[Hash(algorithm="SHA-256", value=scan_hash)])])])),         (len(observations), len(findings), len(risks))
 
 
 def main():

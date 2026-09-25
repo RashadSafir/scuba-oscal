@@ -42,6 +42,11 @@ class Finding:
     scuba_result: str      # ScubaGear's own word: Pass | Fail | Warning | "" if not assessed
     remediation: str       # catalog remediation steps, HTML stripped
     nist: list[str]        # related NIST SP 800-53 controls from the catalog links
+    # where the record came from in OSCAL ("" when the control was not assessed or findings.json predates them)
+    oscal_control_id: str = ""   # catalog control id, e.g. ms.aad.7.4v1
+    finding_uuid: str = ""       # assessment-results finding
+    observation_uuid: str = ""   # its observation (the evidence)
+    risk_uuid: str = ""          # its risk, failures only
 
     def to_dict(self):
         return asdict(self)
@@ -65,6 +70,7 @@ def load_findings(findings_path=FINDINGS):
         if a["status"] not in STATES:
             raise ValueError(f"{a['control_id']}: unexpected status {a['status']!r}")
         status, obligation = STATES[a["status"]], a.get("obligation") or ""
+        oscal = a.get("oscal") or {}
         out.append(Finding(
             control_id=a["control_id"], title=a.get("title") or "", group=a.get("group") or "",
             obligation=obligation, status=status,
@@ -73,7 +79,11 @@ def load_findings(findings_path=FINDINGS):
             finding=a.get("finding") or "", evidence=" ".join(a.get("evidence") or []),
             scuba_result=a.get("scubagear_result") or "",
             remediation=strip_html(a.get("remediation_guidance")),
-            nist=list(a.get("nist") or [])))
+            nist=list(a.get("nist") or []),
+            oscal_control_id=a.get("oscal_control_id") or "",
+            finding_uuid=oscal.get("finding_uuid") or "",
+            observation_uuid=next(iter(oscal.get("observation_uuids") or []), ""),
+            risk_uuid=next(iter(oscal.get("risk_uuids") or []), "")))
     return out
 
 
