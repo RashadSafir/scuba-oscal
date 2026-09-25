@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parent.parent
 FINDINGS = ROOT / "oscal" / "findings.json"
 
 # Same obligation -> priority mapping as pipeline/make_poam.py. Keep the two in step.
-PRIORITY = {"SHALL": "high", "SHALL NOT": "high", "SHOULD": "moderate"}
+PRIORITY = {"SHALL": "high", "SHALL NOT": "high", "SHOULD": "moderate", "SHOULD NOT": "moderate"}
 STATES = {"PASS": "PASS", "FAIL": "FAIL", "WARNING": "FAIL", "NOT_ASSESSED": "NOT ASSESSED"}
 PRIORITY_ORDER = {"high": 0, "moderate": 1}
 
@@ -32,7 +32,7 @@ class Finding:
     control_id: str        # policy id as SCuBA writes it, e.g. MS.AAD.7.4v1
     title: str
     group: str             # catalog group title, e.g. "Privileged Access"
-    obligation: str        # SHALL | SHALL NOT | SHOULD
+    obligation: str        # SHALL | SHALL NOT | SHOULD | SHOULD NOT
     status: str            # PASS | FAIL | NOT ASSESSED
     priority: str | None   # high | moderate for failures, None otherwise
     requirement: str       # catalog statement
@@ -104,5 +104,5 @@ def summarize(findings):
 
 
 def prioritized_failures(findings):
-    """Failed controls, high priority (SHALL / SHALL NOT) before moderate (SHOULD), catalog order within."""
+    """Failed controls, high priority (SHALL / SHALL NOT) before moderate (SHOULD / SHOULD NOT), catalog order within."""
     return sorted((f for f in findings if f.status == "FAIL"), key=lambda f: PRIORITY_ORDER[f.priority])

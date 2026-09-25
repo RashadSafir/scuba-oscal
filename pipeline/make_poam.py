@@ -38,8 +38,8 @@ from make_assessment_results import (NS, OSCAL_VERSION, PROP_NS, default_catalog
 HERE = Path(__file__).resolve().parent
 
 # obligation (from the catalog) -> POA&M priority. A missed SHALL / SHALL NOT is a hard requirement
-# failing; a missed SHOULD is a recommendation. Adjust here if the team ranks them differently.
-PRIORITY = {"SHALL": "high", "SHALL NOT": "high", "SHOULD": "moderate"}
+# failing; a missed SHOULD / SHOULD NOT is a recommendation. Adjust here if the team ranks them differently.
+PRIORITY = {"SHALL": "high", "SHALL NOT": "high", "SHOULD": "moderate", "SHOULD NOT": "moderate"}
 
 
 def default_results():
