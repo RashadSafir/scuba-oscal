@@ -83,6 +83,7 @@ FIX_FIRST = 3   # high-priority failures shown on the overview
 CHAT_HEIGHT = 560   # px; the Questions conversation scrolls inside this box (CSS fits it to the window, see STYLE)
 POLICY_ID = re.compile(r"^MS\.[A-Z]+\.(\d+)\.(\d+)v\d+$")   # MS.AAD.<section>.<policy>v<version>
 MAP_CLASS = {"Fail": "fail", "Warning": "warn", "Pass": "pass", "Not assessed": "na"}
+LEGEND_ORDER = ["Pass", "Warning", "Fail", "Not assessed"]   # colour key and per-product table order
 
 # Colours and type beyond what .streamlit/config.toml can express: the baseline map cells (styled by
 # their widget key, st-key-map_<result>_...), the legend swatches, and the baseline's requirement
@@ -136,6 +137,30 @@ div:has(> .st-key-chat_log) { height: max(220px, calc(100vh - 340px)) !important
 .scb-dl dd { margin: 0; font-size: 0.92rem; color: #1C2733; overflow-wrap: anywhere; }
 .scb-dl dd span { color: #5F6B7A; }
 </style>"""
+
+# Hover labels (a button's help tooltip) can stay on screen after a click opens the details window: the window
+# covers the mouse, and the rerun can redraw the button so the label loses its owner and is never closed.
+# So a label is shown only while its own button is under the mouse. (Not on focus: closing the window gives
+# focus back to the button that opened it, which would bring its label back.)
+TOOLTIP_FIX = """<script>
+if (!window.scbTooltipFix) {
+  window.scbTooltipFix = true;
+  let queued = false;
+  const tidy = () => {
+    queued = false;
+    for (const tip of document.querySelectorAll('[role="tooltip"]')) {
+      if (!tip.querySelector('[data-testid="stTooltipContent"]')) continue;   // only the help labels
+      const owner = tip.id && document.querySelector('[aria-describedby="' + CSS.escape(tip.id) + '"]');
+      const active = owner && owner.matches(":hover");
+      tip.style.display = active ? "" : "none";
+    }
+  };
+  const later = () => { if (!queued) { queued = true; requestAnimationFrame(tidy); } };
+  document.addEventListener("mouseover", later, true);
+  new MutationObserver(later).observe(document.body, {childList: true, subtree: true, attributes: true,
+                                                      attributeFilter: ["aria-describedby"]});
+}
+</script>"""
 
 PERSONA_QUESTIONS = {   # starter questions for each kind of reader
     "Engineer": ["What should I fix first, and how?",
@@ -257,6 +282,17 @@ def scan_results(doc):
                 if isinstance(c, dict) and c.get("Control ID"):
                     out[c["Control ID"]] = c.get("Result") or ""
     return out
+
+
+SHORT_REASONS = {"N/A": "Manual check needed", "Error": "Scan error: re-run", "Omitted": "Omitted by config"}
+
+
+def short_reason(control_id, results, tool_version):
+    """A few words for the Not assessed table; the control's details give the full sentence."""
+    result = results.get(control_id)
+    if result is None:
+        return f"Newer than ScubaGear {tool_version}".strip()
+    return SHORT_REASONS.get(result, f"ScubaGear said {result}")
 
 
 def not_assessed_reason(control_id, results):
@@ -497,9 +533,11 @@ def poam_caption(f):
     if not item:
         return
     target = st.session_state.target_dates.get(f.control_id)
-    steps = ", ".join(f"{n}) {m}" for n, m in enumerate(item["milestones"], 1))
-    st.caption(f"**Plan of action:** POA&M item `{item['item_uuid']}`. Milestones: {steps}. Target date: "
-               + (f"{target:%d %b %Y}" if target else "not set (set it in Findings, under Plan of action)") + ".")
+    steps = "\n".join(f"    {n}. {m}" for n, m in enumerate(item["milestones"], 1))
+    st.caption("**Plan of action**\n\n"
+               f"- POA&M item: `{item['item_uuid']}`\n"
+               f"- Milestones:\n{steps}\n"
+               "- Target date: " + (f"{target:%d %b %Y}" if target else "not set (set it in Findings, under Plan of action)"))
 
 
 def render_plan_of_action():
@@ -600,10 +638,10 @@ def oscal_chain(f, docs):
 
 
 def oscal_ids_caption(f):
-    parts = [f"control `{f.oscal_control_id or f.control_id.lower()}`"]
-    parts += [f"{kind} `{u}`" for kind, u in (("finding", f.finding_uuid), ("observation", f.observation_uuid),
-                                              ("risk", f.risk_uuid)) if u]
-    st.caption("OSCAL: " + "; ".join(parts))
+    parts = [f"Control: `{f.oscal_control_id or f.control_id.lower()}`"]
+    parts += [f"{kind}: `{u}`" for kind, u in (("Finding", f.finding_uuid), ("Observation", f.observation_uuid),
+                                               ("Risk", f.risk_uuid)) if u]
+    st.caption("**OSCAL**\n\n" + "\n".join(f"- {p}" for p in parts))
 
 
 def save_attestation(control_id):
@@ -1136,6 +1174,7 @@ st.set_page_config(page_title="SCuBA posture assistant", page_icon=PAGE_ICON,
 
 problem = ai_problem()
 st.html(STYLE)
+st.html(TOOLTIP_FIX, unsafe_allow_javascript=True)
 
 with st.sidebar:
     st.markdown("**SCuBA posture assistant**")
@@ -1260,21 +1299,21 @@ with tab_overview:
                     f"Required (SHALL) and {recommended} Recommended (SHOULD).")
     st.html(f'<p class="scb-verdict">{html.escape(verdict)}</p>')
     scan_context()
-    counts = {label: sum(result_badge(f.status, f.scuba_result)[0] == label for f in findings) for label in MAP_CLASS}
-    st.html('<div class="scb-legend">' + "".join(
-        f'<span><i class="scb-sw-{MAP_CLASS[label]}"></i>{label} {n}</span>' for label, n in counts.items())
-        + "</div>")
     if len(products) > 1:
         by_product = []
         for product in products:
             fs = [f for f in findings if f.product == product]
             labels = [result_badge(f.status, f.scuba_result)[0] for f in fs]
-            by_product.append({"Product": product, "Controls": len(fs), "Pass": labels.count("Pass"),
-                               "Fail": labels.count("Fail"), "Warning": labels.count("Warning"),
-                               "Not assessed": labels.count("Not assessed"),
+            by_product.append({"Product": product, "Controls": len(fs),
+                               **{label: labels.count(label) for label in LEGEND_ORDER},
                                "Required failing": sum(f.priority == "high" for f in fs)})
         st.dataframe(by_product, hide_index=True,
                      column_config={"Product": st.column_config.TextColumn(width="medium")})
+    # the colour key sits right above the map it explains
+    counts = {label: sum(result_badge(f.status, f.scuba_result)[0] == label for f in findings) for label in LEGEND_ORDER}
+    st.html('<div class="scb-legend">' + "".join(
+        f'<span><i class="scb-sw-{MAP_CLASS[label]}"></i>{label} {n}</span>' for label, n in counts.items())
+        + "</div>")
     baseline_map(findings)
     st.caption("Select a policy to see its requirement, what the scan found and how to fix it.")
 
@@ -1292,7 +1331,6 @@ with tab_overview:
         st.success("Every assessed control passed.", icon=":material/verified:")
 
     if unassessed:
-        reasons = [not_assessed_reason(f.control_id, results_by_id) for f in unassessed]
         cant_check = sum(results_by_id.get(f.control_id) == "N/A" for f in unassessed)
         missing = sum(f.control_id not in results_by_id for f in unassessed)
         parts = [f"{cant_check} can't be checked by ScubaGear automatically" if cant_check else "",
@@ -1302,17 +1340,21 @@ with tab_overview:
         st.caption("ScubaGear returned no pass or fail for these controls, so their status is unknown"
                    + (": " + " and ".join(p for p in parts if p) if any(parts) else "") + ". Check them by hand.")
         attested = st.session_state.attestations
-        st.dataframe(
-            [{"Control": f.control_id, "Product": f.product, "Title": f.title, "Obligation": f.obligation, "Why": why,
-              "Attested": (f"{attested[f.control_id]['result']} ({attested[f.control_id]['reviewer']})"
-                           if f.control_id in attested else "")}
-             for f, why in zip(unassessed, reasons)],
-            hide_index=True,
-            column_config={"Control": st.column_config.TextColumn(width=165),
-                           "Title": st.column_config.TextColumn(width="medium"),
-                           "Obligation": st.column_config.TextColumn(width=95),
-                           "Why": st.column_config.TextColumn(width="large"),
-                           "Attested": st.column_config.TextColumn(width="small")})
+        rows = [{"Control": f.control_id, "Product": f.product, "Title": f.title, "Obligation": f.obligation,
+                 "Why": short_reason(f.control_id, results_by_id, info.get("tool_version") or "")}
+                for f in unassessed]
+        if any(f.control_id in attested for f in unassessed):   # the column appears once someone attests a control
+            for row in rows:
+                a = attested.get(row["Control"])
+                row["Attested"] = f"{a['result']} ({a['reviewer']})" if a else ""
+        # widths kept to what fits the page, so the table never scrolls sideways
+        st.dataframe(rows, hide_index=True,
+                     column_config={"Control": st.column_config.TextColumn(width=145),
+                                    "Product": st.column_config.TextColumn(width=140),
+                                    "Title": st.column_config.TextColumn(width=205),
+                                    "Obligation": st.column_config.TextColumn(width=80),
+                                    "Why": st.column_config.TextColumn(width=195),
+                                    "Attested": st.column_config.TextColumn(width=150)})
         st.caption("Checked one by hand? Select it on the map above and use **Attest this control**.")
 
 # Findings: every failed control as a worklist, filterable
