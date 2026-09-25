@@ -71,6 +71,7 @@ TAB_CHAT = "Questions"
 TAB_REPORT = "Report"
 TAB_OSCAL = "OSCAL"
 FIX_FIRST = 3   # high-priority failures shown on the overview
+CHAT_HEIGHT = 560   # px; the Questions conversation scrolls inside this box (CSS fits it to the window, see STYLE)
 POLICY_ID = re.compile(r"^MS\.[A-Z]+\.(\d+)\.(\d+)v\d+$")   # MS.AAD.<section>.<policy>v<version>
 MAP_CLASS = {"Fail": "fail", "Warning": "warn", "Pass": "pass", "Not assessed": "na"}
 
@@ -115,6 +116,10 @@ STYLE = """<style>
 .scb-product { font-size: 1.05rem; font-weight: 700; color: #1C2733; margin: 1.1rem 0 0.2rem;
                padding-top: 0.6rem; border-top: 1px solid #D4D9D2; }
 .scb-product span { font-size: 0.85rem; font-weight: 400; color: #5F6B7A; margin-left: 0.75rem; }
+[data-testid="stMainBlockContainer"] { padding-top: 2.5rem; }
+/* the Questions conversation fills the window above the question box, so the box needs no scrolling */
+div:has(> .st-key-chat_log) { height: max(220px, calc(100vh - 340px)) !important;
+                              flex: 0 0 max(220px, calc(100vh - 340px)) !important; }   /* less empty space above the title */
 .scb-rule { border: none; border-top: 1px solid #D4D9D2; margin: 1.1rem 0 0.6rem; }
 .scb-dl, .scb-dl dt, .scb-dl dd { margin-left: 0; padding-left: 0; }
 .scb-dl { margin: 0; }
@@ -795,11 +800,18 @@ def worklist_row(f, key_prefix):
 
 def render_exchange(question, answer, index):
     """One question and its answer in the Q&A record, with the controls it cites listed underneath."""
+    render_question(question, index)
+    if answer is not None:
+        render_answer(answer, index)
+
+
+def render_question(question, index):
     if index:
         st.html('<hr class="scb-rule">')
     st.html(f'<p class="scb-q">{html.escape(question)}</p>')
-    if answer is None:
-        return
+
+
+def render_answer(answer, index):
     if answer.get("error"):
         st.error(answer["content"], icon=":material/error:")
         return
@@ -969,19 +981,21 @@ with st.sidebar:
     st.space("small")
     st.button("Upload a different scan", width="stretch", on_click=clear_scan)
 
+def scan_context():
+    """What was scanned, what was left out, and whether the scan is old: shown under the Overview headline."""
+    st.caption(f"{', '.join(products)} assessed against the CISA SCuBA baselines, from a ScubaGear "
+               f"{info.get('tool_version') or ''} scan on {scanned}, converted to OSCAL. Statuses come from the scan; "
+               "anything the AI writes is labelled as AI.")
+    if skipped_products:
+        st.caption(f"Not in this scan, so left out: {', '.join(skipped_products)}. Run ScubaGear with those products "
+                   "to include them.")
+    if age is not None and age > STALE_SCAN_DAYS:
+        st.warning(f"**This scan is {age} days old.** The tenant's settings may have changed since; re-run "
+                   "ScubaGear for an up-to-date picture.", icon=":material/history:")
+
+
 # The tenant is the subject of the page, so it is the title.
-st.title(info.get("domain") or info.get("tenant") or "Your tenant", anchor=False)
-st.caption(f"{', '.join(products)} assessed against the CISA SCuBA baselines, from a ScubaGear "
-           f"{info.get('tool_version') or ''} scan on {scanned}, converted to OSCAL. Statuses come from the scan; "
-           "anything the AI writes is labelled as AI.")
-if skipped_products:
-    st.caption(f"Not in this scan, so left out: {', '.join(skipped_products)}. Run ScubaGear with those products "
-               "to include them.")
-if age is not None and age > STALE_SCAN_DAYS:
-    st.warning(f"**This scan is {age} days old.** The tenant's settings may have changed since; re-run "
-               "ScubaGear for an up-to-date picture.", icon=":material/history:")
-if problem:
-    ai_off_note()
+st.title(info.get("domain") or info.get("tenant") or "Your tenant", anchor=False)   # AI status is in the sidebar
 
 tab_overview, tab_findings, tab_chat, tab_report, tab_oscal = st.tabs(
     [TAB_OVERVIEW, TAB_FINDINGS, TAB_CHAT, TAB_REPORT, TAB_OSCAL], key="tab", on_change="rerun")
@@ -996,6 +1010,7 @@ with tab_overview:
         verdict += (f" Of the failures, {len(high_priority)} {'is' if len(high_priority) == 1 else 'are'} "
                     f"Required (SHALL) and {recommended} Recommended (SHOULD).")
     st.html(f'<p class="scb-verdict">{html.escape(verdict)}</p>')
+    scan_context()
     counts = {label: sum(result_badge(f.status, f.scuba_result)[0] == label for f in findings) for label in MAP_CLASS}
     st.html('<div class="scb-legend">' + "".join(
         f'<span><i class="scb-sw-{MAP_CLASS[label]}"></i>{label} {n}</span>' for label, n in counts.items())
@@ -1097,10 +1112,8 @@ with tab_findings:
                                     "Obligation": st.column_config.TextColumn(width=95),
                                     "Status": st.column_config.TextColumn(width=110)})
 
-# Questions: a record of questions and answers, newest first
+# Questions: the conversation in a scrolling box, oldest first, with the question box underneath
 with tab_chat:
-    typed = st.chat_input("AI is offline, see the note above" if problem else "Ask about this scan",
-                          submit_mode="disable", disabled=bool(problem))
     with st.container(horizontal=True, vertical_alignment="center"):
         st.caption("Answers are written by the AI from the verified results, and list the controls they rely on.",
                    width="stretch")
@@ -1108,31 +1121,37 @@ with tab_chat:
                   args=("summary", "Give me an executive summary of our Microsoft 365 security posture."))
         st.button("Clear questions", type="tertiary", on_click=clear_conversation,
                   disabled=not st.session_state.messages)
+    conversation = st.container(height=CHAT_HEIGHT, autoscroll=True, key="chat_log")   # scrolls to the newest answer
+    typed = st.chat_input("AI is offline, see the sidebar" if problem else "Ask about this scan",
+                          submit_mode="disable", disabled=bool(problem))
 
     request = {"kind": "chat", "prompt": typed, "control_id": None} if typed else st.session_state.pending
     st.session_state.pending = None
-    if request:
-        history = chat_history()
-        user_msg = {"role": "user", "content": request["prompt"]}
-        try:
-            with st.spinner("Working on the answer…"):
-                reply = ask(assistant, request, history)
-            msg = {"role": "assistant", "content": reply["text"], "verified": reply["verified"],
-                   "unverified": reply["unverified_references"]}
-        except Exception as exc:
-            log.exception("AI request failed")
-            user_msg["failed"] = True
-            msg = {"role": "assistant", "content": friendly_error(exc), "error": True}
-        st.session_state.messages += [user_msg, msg]
-
     msgs = st.session_state.messages
     exchanges = [(msgs[i]["content"], msgs[i + 1] if i + 1 < len(msgs) else None) for i in range(0, len(msgs), 2)]
-    if not exchanges:
-        st.markdown("Ask anything about this scan. For example:")
-        for q in EXAMPLE_QUESTIONS:
-            st.button(q, key=f"example_{q}", type="tertiary", disabled=bool(problem), on_click=queue, args=("chat", q))
-    for n, (question, answer) in enumerate(reversed(exchanges)):
-        render_exchange(question, answer, n)
+    with conversation:
+        if not exchanges and not request:
+            st.markdown("Ask anything about this scan. For example:")
+            for q in EXAMPLE_QUESTIONS:
+                st.button(q, key=f"example_{q}", type="tertiary", disabled=bool(problem), on_click=queue,
+                          args=("chat", q))
+        for n, (question, answer) in enumerate(exchanges):
+            render_exchange(question, answer, n)
+        if request:   # show the question at once, then the answer under it when it arrives
+            index = len(exchanges)
+            render_question(request["prompt"], index)
+            user_msg = {"role": "user", "content": request["prompt"]}
+            try:
+                with st.spinner("Working on the answer…"):
+                    reply = ask(assistant, request, chat_history())
+                msg = {"role": "assistant", "content": reply["text"], "verified": reply["verified"],
+                       "unverified": reply["unverified_references"]}
+            except Exception as exc:
+                log.exception("AI request failed")
+                user_msg["failed"] = True
+                msg = {"role": "assistant", "content": friendly_error(exc), "error": True}
+            st.session_state.messages += [user_msg, msg]
+            render_answer(msg, index)
 
 # Report: the AI-written PDF
 with tab_report:
