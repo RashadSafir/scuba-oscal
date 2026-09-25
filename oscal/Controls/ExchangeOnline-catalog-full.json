@@ -1,0 +1,551 @@
+{
+  "catalog": {
+    "uuid": "e2e62b18-2981-5773-83e9-d932b30f245e",
+    "metadata": {
+      "title": "CISA SCuBA Exchange Online (MS.EXO) Baseline - all policies",
+      "last-modified": "2026-09-23T00:00:00+00:00",
+      "version": "0.3.0",
+      "oscal-version": "1.1.2"
+    },
+    "groups": [
+      {
+        "id": "ms.exo.1",
+        "title": "Automatic Forwarding to External Domains",
+        "controls": [
+          {
+            "id": "ms.exo.1.1v2",
+            "title": "Automatic forwarding to external domains SHALL be disabled.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.EXO.1.1v2"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-4",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-4"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.exo.1.1v2_smt",
+                "name": "statement",
+                "prose": "Automatic forwarding to external domains SHALL be disabled."
+              },
+              {
+                "id": "ms.exo.1.1v2_gdn",
+                "name": "guidance",
+                "prose": "Adversaries can use automatic forwarding to gain"
+              },
+              {
+                "id": "ms.exo.1.1v2_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To disallow automatic forwarding to external domains:\n\n1.  Sign in to the **Exchange admin center**.\n\n2.  Select **Mail flow**, then **Remote domains**.\n\n3.  Select **Default**.\n\n4.  Under **Email reply types**, select **Edit reply types**.\n\n5.  Clear the checkbox next to **Allow automatic forwarding**, then\n    click **Save**.\n\n6.  Return to **Remote domains** and review each\n    additional remote domain in the list, ensuring that automatic forwarding\n    is only allowed for approved domains."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.exo.2",
+        "title": "Sender Policy Framework",
+        "controls": [
+          {
+            "id": "ms.exo.2.2v3",
+            "title": "An SPF policy SHALL be published for each domain that fails all non-approved senders.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.EXO.2.2v3"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-2",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-2d"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.exo.2.2v3_smt",
+                "name": "statement",
+                "prose": "An SPF policy SHALL be published for each domain that fails all non-approved senders."
+              },
+              {
+                "id": "ms.exo.2.2v3_gdn",
+                "name": "guidance",
+                "prose": "An adversary may modify the `FROM` field"
+              },
+              {
+                "id": "ms.exo.2.2v3_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "First, identify any approved senders specific to your agency, e.g., any on-premises mail servers. SPF allows you to indicate approved senders by IP address or CIDR range. However, note that SPF allows you to [include](https://www.rfc-editor.org/rfc/rfc7208#section-5.2) the IP addresses indicated by a separate SPF policy, referred to by domain name. See [External DNS records required for SPF](https://learn.microsoft.com/en-us/microsoft-365/enterprise/external-domain-name-system-records?view=o365-worldwide#external-dns-records-required-for-spf) for inclusions required for M365 to send email on behalf of your domain.\n\nSPF is not configured through the Exchange admin center, but rather via\nDNS records hosted by the agency's domain. Thus, the exact steps needed\nto set up SPF varies from agency to agency. See [Add or edit an SPF TXT record to help prevent email spam (Outlook, Exchange Online) \\| Microsoft Learn](https://learn.microsoft.com/en-us/microsoft-365/admin/get-help-with-domains/create-dns-records-at-any-dns-hosting-provider?view=o365-worldwide#add-or-edit-an-spf-txt-record-to-help-prevent-email-spam-outlook-exchange-online) for more details.\n\nTo test your SPF configuration, consider using a web-based tool, such as\nthose listed under [How can I validate SPF records for my domain? \\| Microsoft Learn](https://learn.microsoft.com/en-us/microsoft-365/admin/setup/domains-faq?view=o365-worldwide#how-can-i-validate-spf-records-for-my-domain).\nAdditionally, SPF records can be requested using the\nPowerShell tool `Resolve-DnsName`. For example:\n\n```\nResolve-DnsName example.onmicrosoft.com txt\n```\n\nIf SPF is configured, you will see a response resembling `v=spf1 include:spf.protection.outlook.com -all`\nreturned; though by necessity, the contents of the SPF\npolicy may vary by agency. In this example, the SPF policy indicates\nthe IP addresses listed by the policy for \"spf.protection.outlook.com\" are\nthe only approved senders for \"example.onmicrosoft.com.\" These IPs can be determined\nvia an additional SPF lookup, this time for \"spf.protection.outlook.com.\" Ensure the IP addresses listed as approved senders for your domains are correct. Additionally, ensure that each policy either ends in `-all` or `~all` or [redirects](https://www.rfc-editor.org/rfc/rfc7208#section-6.1) to one that does; these directives indicates that all IPs that don't match the policy should fail. See [SPF TXT record syntax for Microsoft 365 \\| Microsoft Learn](https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/email-authentication-anti-spoofing?view=o365-worldwide#spf-txt-record-syntax-for-microsoft-365) for a more in-depth discussion\nof SPF record syntax."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.exo.3",
+        "title": "DomainKeys Identified Mail",
+        "controls": [
+          {
+            "id": "ms.exo.3.1v1",
+            "title": "DKIM SHOULD be enabled for all domains.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.EXO.3.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-8"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.exo.3.1v1_smt",
+                "name": "statement",
+                "prose": "DKIM SHOULD be enabled for all domains."
+              },
+              {
+                "id": "ms.exo.3.1v1_gdn",
+                "name": "guidance",
+                "prose": "An adversary may modify the `FROM` field"
+              },
+              {
+                "id": "ms.exo.3.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "1. To enable DKIM, follow the instructions listed on [Steps to Create,\nenable and disable DKIM from Microsoft 365 Defender portal \\| Microsoft\nLearn](https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/email-authentication-dkim-configure?view=o365-worldwide#steps-to-create-enable-and-disable-dkim-from-microsoft-365-defender-portal)."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.exo.4",
+        "title": "Domain-Based Message Authentication, Reporting, and Conformance (DMARC)",
+        "controls": [
+          {
+            "id": "ms.exo.4.1v1",
+            "title": "A DMARC policy SHALL be published for every second-level domain.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.EXO.4.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-8"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.exo.4.1v1_smt",
+                "name": "statement",
+                "prose": "A DMARC policy SHALL be published for every second-level domain."
+              },
+              {
+                "id": "ms.exo.4.1v1_gdn",
+                "name": "guidance",
+                "prose": "Without a DMARC policy available for each domain, recipients"
+              },
+              {
+                "id": "ms.exo.4.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "DMARC is not configured through the Exchange admin center, but rather via\nDNS records hosted by the agency's domain. As such, implementation varies\ndepending on how an agency manages its DNS records. See [Form the DMARC TXT record for your domain \\| Microsoft\nLearn](https://learn.microsoft.com/en-us/microsoft-365/security/office-365-security/email-authentication-dmarc-configure?view=o365-worldwide#step-4-form-the-dmarc-txt-record-for-your-domain)\nfor Microsoft guidance.\n\nA DMARC record published at the second-level domain will protect all subdomains.\nIn other words, a DMARC record published for `example.com` will protect both\n`a.example.com` and `b.example.com`, but a separate record would need to be\npublished for `c.example.gov`.\n\nTo test your DMARC configuration, consider using one of many publicly available\nweb-based tools. Additionally, DMARC records can be requested using the\nPowerShell tool `Resolve-DnsName`. For example:\n\n```\nResolve-DnsName _dmarc.example.com txt\n```\n\nIf DMARC is configured, a response resembling `v=DMARC1; p=reject; pct=100; rua=mailto:reports@dmarc.cyber.dhs.gov, mailto:reports@example.com; ruf=mailto:reports@example.com`\nwill be returned, though by necessity, the contents of the record will vary\nby agency. In this example, the policy indicates all emails failing the\nSPF/DKIM checks are to be rejected and aggregate reports sent to\nreports@dmarc.cyber.dhs.gov and reports@example.com. Failure reports will be\nsent to reports@example.com."
+              }
+            ]
+          },
+          {
+            "id": "ms.exo.4.2v1",
+            "title": "The DMARC message rejection option SHALL be p=reject.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.EXO.4.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-8"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.exo.4.2v1_smt",
+                "name": "statement",
+                "prose": "The DMARC message rejection option SHALL be p=reject."
+              },
+              {
+                "id": "ms.exo.4.2v1_gdn",
+                "name": "guidance",
+                "prose": "Of the three policy options (i.e., none, quarantine, and reject),"
+              },
+              {
+                "id": "ms.exo.4.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "See [MS.EXO.4.1v1 Instructions](#msexo41v1-instructions) for an overview of how to publish and check a DMARC record. Ensure the record published includes `p=reject`."
+              }
+            ]
+          },
+          {
+            "id": "ms.exo.4.3v1",
+            "title": "The DMARC point of contact for aggregate reports SHALL include `reports@dmarc.cyber.dhs.gov`.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.EXO.4.3v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-4.5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-4(5)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.exo.4.3v1_smt",
+                "name": "statement",
+                "prose": "The DMARC point of contact for aggregate reports SHALL include `reports@dmarc.cyber.dhs.gov`."
+              },
+              {
+                "id": "ms.exo.4.3v1_gdn",
+                "name": "guidance",
+                "prose": "Email spoofing attempts are not inherently visible to domain"
+              },
+              {
+                "id": "ms.exo.4.3v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "See [MS.EXO.4.1v1 Instructions](#msexo41v1-instructions) for an overview of how to publish and check a DMARC record. Ensure the record published includes <reports@dmarc.cyber.dhs.gov>\nas one of the emails for the RUA field."
+              }
+            ]
+          },
+          {
+            "id": "ms.exo.4.4v1",
+            "title": "An agency point of contact SHOULD be included for aggregate and failure reports.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.EXO.4.4v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-4.5",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-4(5)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.exo.4.4v1_smt",
+                "name": "statement",
+                "prose": "An agency point of contact SHOULD be included for aggregate and failure reports."
+              },
+              {
+                "id": "ms.exo.4.4v1_gdn",
+                "name": "guidance",
+                "prose": "Email spoofing attempts are not inherently visible to domain"
+              },
+              {
+                "id": "ms.exo.4.4v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "See [MS.EXO.4.1v1 Instructions](#msexo41v1-instructions) for an overview of how to publish and check a DMARC record. Ensure the record published includes:\n- A point of contact specific to your agency in the RUA field.\n- <reports@dmarc.cyber.dhs.gov> as one of the emails in the RUA field.\n- One or more agency-defined points of contact in the RUF field."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.exo.5",
+        "title": "Simple Mail Transfer Protocol Authentication",
+        "controls": [
+          {
+            "id": "ms.exo.5.1v1",
+            "title": "SMTP AUTH SHALL be disabled.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.EXO.5.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-7",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-7"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.exo.5.1v1_smt",
+                "name": "statement",
+                "prose": "SMTP AUTH SHALL be disabled."
+              },
+              {
+                "id": "ms.exo.5.1v1_gdn",
+                "name": "guidance",
+                "prose": "SMTP AUTH is not used or needed by modern email clients."
+              },
+              {
+                "id": "ms.exo.5.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To disable SMTP AUTH for the organization:\n\n1. Sign in to the **Exchange admin center**.\n\n2. On the left hand pane, select **Settings**; then from the settings list, select **Mail Flow**.\n\n3. Make sure the setting **Turn off SMTP AUTH protocol for your organization** is checked."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.exo.6",
+        "title": "Calendar and Contact Sharing",
+        "controls": [
+          {
+            "id": "ms.exo.6.1v1",
+            "title": "Contact folders SHALL NOT be shared with all domains.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.EXO.6.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-3"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-7.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-7(10)(a)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.exo.6.1v1_smt",
+                "name": "statement",
+                "prose": "Contact folders SHALL NOT be shared with all domains."
+              },
+              {
+                "id": "ms.exo.6.1v1_gdn",
+                "name": "guidance",
+                "prose": "Contact folders may contain information that should not be shared by default with all domains. Disabling sharing with all domains closes an avenue for data exfiltration while still allowing"
+              },
+              {
+                "id": "ms.exo.6.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To restrict sharing with all domains:\n\n1. Sign in to the **Exchange admin center**.\n\n2. On the left-hand pane under **Organization**, select **Sharing**.\n\n3. Select **Individual Sharing**.\n\n4. For all existing policies, select the policy, then select **Manage domains**.\n\n5. For all sharing rules under all existing policies, ensure **Sharing with all domains** is not selected."
+              }
+            ]
+          },
+          {
+            "id": "ms.exo.6.2v1",
+            "title": "Calendar details SHALL NOT be shared with all domains.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.EXO.6.2v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-3"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-7.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-7(10)(a)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.exo.6.2v1_smt",
+                "name": "statement",
+                "prose": "Calendar details SHALL NOT be shared with all domains."
+              },
+              {
+                "id": "ms.exo.6.2v1_gdn",
+                "name": "guidance",
+                "prose": "Calendar details may contain information that should not be shared by default with all domains. Disabling sharing with all domains closes an avenue for data exfiltration while still allowing"
+              },
+              {
+                "id": "ms.exo.6.2v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To restrict sharing calendar details with all domains:\n\n1. Refer to step 5 in [MS.EXO.6.1v1 Instructions](#msexo61v1-instructions) to implement\nthis policy."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.exo.7",
+        "title": "External Sender Warnings",
+        "controls": [
+          {
+            "id": "ms.exo.7.1v1",
+            "title": "External sender warnings SHALL be implemented.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.EXO.7.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-8"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.exo.7.1v1_smt",
+                "name": "statement",
+                "prose": "External sender warnings SHALL be implemented."
+              },
+              {
+                "id": "ms.exo.7.1v1_gdn",
+                "name": "guidance",
+                "prose": "Alerting users when email originates from outside their organization can encourage them to exercise increased caution, especially if an email is one they expected from an internal sender."
+              },
+              {
+                "id": "ms.exo.7.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To create a mail flow rule to produce external sender warnings:\n\n1.  Sign in to the **Exchange admin center**.\n\n2.  Under **Mail flow**, select **Rules**.\n\n3.  Click the plus (**+**) button to create a new rule.\n\n4.  Select **Modify messages…**.\n\n5.  Give the rule an appropriate name.\n\n6.  Under **Apply this rule if…,** select **The sender is external/internal**.\n\n7.  Under **select sender location**, select **Outside the organization**, then click **OK**.\n\n8.  Under **Do the following…,** select **Prepend the subject of the message with…**.\n\n9.  Under **specify subject prefix**, enter a message such as\n    \"\\[External\\]\" (without the quotation marks), then click **OK**.\n\n10. Click **Next**.\n\n11. Under **Choose a mode for this rule**, select **Enforce**.\n\n12. Leave the **Severity** as **Not Specified**.\n\n13. Leave the **Match sender address in message** as **Header** and click **Next**.\n\n14. Click **Finish** and then **Done**.\n\n15. The new rule will be disabled.  Re-select the new rule to show its\n    settings and slide the **Enable or disable rule** slider to the right\n    until it shows as **Enabled**."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.exo.13",
+        "title": "Mailbox Auditing",
+        "controls": [
+          {
+            "id": "ms.exo.13.1v1",
+            "title": "Mailbox auditing SHALL be enabled.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.EXO.13.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#au-12",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AU-12c"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.exo.13.1v1_smt",
+                "name": "statement",
+                "prose": "Mailbox auditing SHALL be enabled."
+              },
+              {
+                "id": "ms.exo.13.1v1_gdn",
+                "name": "guidance",
+                "prose": "Exchange Online user accounts can be compromised or misused. Enabling mailbox auditing provides a valuable source of information to detect and respond to mailbox misuse."
+              },
+              {
+                "id": "ms.exo.13.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "Mailbox auditing can be managed from the Exchange Online PowerShell.\nFollow the instructions listed on [Manage mailbox auditing in Office\n365](https://learn.microsoft.com/en-us/microsoft-365/compliance/audit-mailboxes?view=o365-worldwide).\n\nTo check the current mailbox auditing status for your organization via PowerShell:\n\n1.  Connect to the Exchange Online PowerShell.\n\n2.  Run the following command:\n\n    `Get-OrganizationConfig | Format-List AuditDisabled`\n\n3.  An `AuditDisabled : False` result indicates mailbox auditing is enabled.\n\nTo enable mailbox auditing by default for your organization via PowerShell:\n\n1.  Connect to the Exchange Online PowerShell.\n\n2.  Run the following command:\n\n    `Set-OrganizationConfig –AuditDisabled $false`\n\n\n**`TLP:CLEAR`**"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

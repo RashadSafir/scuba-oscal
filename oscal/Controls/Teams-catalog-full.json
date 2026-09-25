@@ -1,0 +1,617 @@
+{
+  "catalog": {
+    "uuid": "ca20a3c5-54f1-5751-80b8-b314bb8dd334",
+    "metadata": {
+      "title": "CISA SCuBA Teams (MS.TEAMS) Baseline - all policies",
+      "last-modified": "2026-09-23T00:00:00+00:00",
+      "version": "0.3.0",
+      "oscal-version": "1.1.2"
+    },
+    "groups": [
+      {
+        "id": "ms.teams.1",
+        "title": "Meeting Policies",
+        "controls": [
+          {
+            "id": "ms.teams.1.1v1",
+            "title": "External meeting participants SHOULD NOT be enabled to request control of shared desktops or windows.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.1.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-17",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-17a"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.1.1v1_smt",
+                "name": "statement",
+                "prose": "External meeting participants SHOULD NOT be enabled to request control of shared desktops or windows."
+              },
+              {
+                "id": "ms.teams.1.1v1_gdn",
+                "name": "guidance",
+                "prose": "An external participant with control of a shared screen could potentially perform unauthorized actions on the shared screen. This policy reduces that risk by removing an external participant's ability to request control. However, if an agency has a legitimate use case to grant this control, it may be done on a case-by-case basis."
+              },
+              {
+                "id": "ms.teams.1.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To help ensure external participants do not have the ability to request\ncontrol of the shared desktop or window in the meeting:\n\n1.  Sign in to the **Microsoft Teams admin center**.\n\n2.  Select **Meetings** > **Meeting policies**.\n\n3.  Select the **Global (Org-wide default)** policy.\n\n4.  Under the **Content sharing** section, ensure **External participants can give or request control** is set to the **Off** position.\n\n5.  Select **Save** (if applicable).\n\n6.  If custom policies exist on the tenant, repeat these steps for each policy, selecting the appropriate policy in step 3."
+              }
+            ]
+          },
+          {
+            "id": "ms.teams.1.2v2",
+            "title": "Anonymous users SHALL NOT be enabled to start meetings.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.1.2v2"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-15",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-15a"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.1.2v2_smt",
+                "name": "statement",
+                "prose": "Anonymous users SHALL NOT be enabled to start meetings."
+              },
+              {
+                "id": "ms.teams.1.2v2_gdn",
+                "name": "guidance",
+                "prose": "This policy protects against anonymous users starting Microsoft Teams meetings to scrape internal contacts. The policy is beneficial for agencies that have implemented custom policies, providing flexibility for some users to automatically admit \"everyone\" to a Microsoft Teams meeting."
+              },
+              {
+                "id": "ms.teams.1.2v2_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To configure settings for anonymous users so that they cannot start meetings:\n\n1.\tSign in to the **Microsoft Teams admin center**.\n\n2.\tSelect **Meetings** > **Meeting policies**.\n\n3.\tSelect the **Global (Org-wide default)** policy.\n\n4.\tUnder the **Meeting join & lobby** section, ensure the **Anonymous users and dial-in callers can start a meeting** setting remains in the default **Off** position.\n\n5.  Select **Save** (if applicable).\n\n6.\tIf custom policies exist on the tenant, repeat these steps for each policy, selecting the appropriate policy in step 3."
+              }
+            ]
+          },
+          {
+            "id": "ms.teams.1.3v1",
+            "title": "Anonymous users and dial-in callers SHOULD NOT be admitted automatically.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.1.3v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-15",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-15a"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.1.3v1_smt",
+                "name": "statement",
+                "prose": "Anonymous users and dial-in callers SHOULD NOT be admitted automatically."
+              },
+              {
+                "id": "ms.teams.1.3v1_gdn",
+                "name": "guidance",
+                "prose": "Automatically allowing admittance to anonymous and dial-in users diminishes control of meeting participation and invites potential data breach. This policy reduces that risk by requiring all anonymous and dial-in users to wait in a lobby until admitted by an authorized meeting participant. If the agency has a use case to admit members of specific trusted organizations and/or B2B guests automatically, custom policies may be created and assigned to authorized meeting organizers."
+              },
+              {
+                "id": "ms.teams.1.3v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To configure settings for anonymous users so that they are not admitted automatically:\n\n1.\tSign in to the **Microsoft Teams admin center**.\n\n2.\tSelect **Meetings** > **Meeting policies**.\n\n3.\tSelect the **Global (Org-wide default)** policy.\n\n4.\tUnder the **Meeting join & lobby** section, ensure **Who can bypass the lobby** is **not** set to **Everyone**. Bypassing the lobby should be set to **People in my org**, though other options may be used if needed or approved.\n\n5.\tIn the same section, ensure **People dialing in can bypass the lobby** is set to the **Off** position.\n\n6.  Select **Save** (if applicable).\n\n7.\tIf custom policies exist on the tenant, repeat these steps for each policy, selecting the appropriate policy in step 3."
+              }
+            ]
+          },
+          {
+            "id": "ms.teams.1.4v1",
+            "title": "Internal users SHOULD be admitted automatically.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.1.4v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-3"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.1.4v1_smt",
+                "name": "statement",
+                "prose": "Internal users SHOULD be admitted automatically."
+              },
+              {
+                "id": "ms.teams.1.4v1_gdn",
+                "name": "guidance",
+                "prose": "Requiring internal users to wait in the lobby for explicit admission can lead to admission fatigue. This policy enables internal users to be automatically admitted to the meeting through global policy."
+              },
+              {
+                "id": "ms.teams.1.4v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To configure settings so that internal users are admitted automatically:\n\n1.\tSign in to the **Microsoft Teams admin center**.\n\n2.\tSelect **Meetings** > **Meeting policies**.\n\n3.\tSelect the **Global (Org-wide default)** policy.\n\n4.\tUnder the **Meeting join & lobby** section, ensure **Who can bypass the lobby** is set to **People in my org**.\n\n5.\tIn the same section, ensure **People dialing in can bypass the lobby** is set to the **Off** position.\n\n6.  Select **Save** (if applicable).\n\n7.\tIf custom policies exist on the tenant, repeat these steps for each policy, selecting the appropriate policy in step 3."
+              }
+            ]
+          },
+          {
+            "id": "ms.teams.1.5v1",
+            "title": "Dial-in users SHOULD NOT be enabled to bypass the lobby.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.1.5v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-15",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-15a"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.1.5v1_smt",
+                "name": "statement",
+                "prose": "Dial-in users SHOULD NOT be enabled to bypass the lobby."
+              },
+              {
+                "id": "ms.teams.1.5v1_gdn",
+                "name": "guidance",
+                "prose": "Automatically admitting dial-in users reduces control over who can participate in a meeting and increases potential for data breaches. This policy reduces the risk by requiring all dial-in users to wait in a lobby until they are admitted by an authorized meeting participant."
+              },
+              {
+                "id": "ms.teams.1.5v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To configure settings for anonymous users so that they are not able to bypass the lobby:\n\n1.\tSign in to the **Microsoft Teams admin center**.\n\n2.\tSelect **Meetings** > **Meeting policies**.\n\n3.\tSelect the **Global (Org-wide default)** policy.\n\n4.\tUnder the **Meeting join & lobby** section, ensure **People dialing in can bypass the lobby** is set to the **Off** position.\n\n5.  Select **Save** (if applicable).\n\n6.\tIf custom policies exist on the tenant, repeat these steps for each policy, selecting the appropriate policy in step 3."
+              }
+            ]
+          },
+          {
+            "id": "ms.teams.1.6v1",
+            "title": "Meeting recording SHOULD be disabled.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.1.6v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-7",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-7"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.1.6v1_smt",
+                "name": "statement",
+                "prose": "Meeting recording SHOULD be disabled."
+              },
+              {
+                "id": "ms.teams.1.6v1_gdn",
+                "name": "guidance",
+                "prose": "Allowing any user to record a Teams meeting or group call may lead to unauthorized disclosure of shared information, including audio, video, and shared screens. By disabling the meeting recording setting in the Global (Org-wide default) meeting policy, an agency limits information exposure."
+              },
+              {
+                "id": "ms.teams.1.6v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To configure the settings that control meeting recordings:\n\n1.  Sign in to the **Microsoft Teams admin center**.\n\n2.  Select **Meetings** > **Meeting policies**.\n\n3.  Select the **Global (Org-wide default)** policy.\n\n4.  Under the **Recording & transcription** section, ensure **Meeting recording** is set to the **Off** position.\n\n5.  Select **Save** (if applicable).\n\n6.\tIf custom policies exist on the tenant, repeat these steps for each policy, selecting the appropriate policy in step 3."
+              }
+            ]
+          },
+          {
+            "id": "ms.teams.1.7v2",
+            "title": "Record an event SHOULD NOT be set to Always record.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.1.7v2"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-21",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-21a"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.1.7v2_smt",
+                "name": "statement",
+                "prose": "Record an event SHOULD NOT be set to Always record."
+              },
+              {
+                "id": "ms.teams.1.7v2_gdn",
+                "name": "guidance",
+                "prose": "Limiting recording permissions to only the organizer minimizes the security risk to the organizer's discretion for these Live Events, reducing data leakage and other security risks. Administrators can also disable recording for all live events."
+              },
+              {
+                "id": "ms.teams.1.7v2_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To configure the settings that control \"live events\" meeting recordings:\n\n1.  Sign in to the **Microsoft Teams admin center**.\n\n2.  Select **Meetings** > **Live events policies**.\n\n3.  Select **Global (Org-wide default)** policy.\n\n4.  Set **Record an event** to either  **Organizer can record** or **Never record**.\n\n5.  Select **Save** (if applicable).\n\n6.\tIf custom policies exist on the tenant, repeat these steps for each policy, selecting the appropriate policy in step 3."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.teams.2",
+        "title": "External User Access",
+        "controls": [
+          {
+            "id": "ms.teams.2.1v2",
+            "title": "External access for users SHALL only be enabled on a per-domain basis.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.2.1v2"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-3",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-3"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.2.1v2_smt",
+                "name": "statement",
+                "prose": "External access for users SHALL only be enabled on a per-domain basis."
+              },
+              {
+                "id": "ms.teams.2.1v2_gdn",
+                "name": "guidance",
+                "prose": "The default configuration allows members to communicate with all external users with similar access permissions. Unrestricted access can lead to data breaches and other security threats. This policy provides protection against threats posed by unrestricted access by allowing communication with only trusted domains."
+              },
+              {
+                "id": "ms.teams.2.1v2_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To enable external access for only specific domains:\n\n1.  Sign in to the **Microsoft Teams admin center**.\n\n2.  Select **External collaboration** > **External access** > **Organization settings** (Tab).\n\n3.  Next to **Teams and Skype for Business users in external organizations**, select **Allow only specific external domains**\n\n4.  Select **Add a domain**. Enter the allowed domain in the text box, press **Add**, and then select **Done** to save your changes.\n\n    **NOTE:** Domains will need to be added in this step in order for users to communicate with them. Ensure only currently allowed domains remain present in the list.\n\n5.  Click **Save** and then **Confirm**.\n\n    **NOTE:** You'll receive a pop-up at this stage stating **Changes will take time to take effect - Changes to External access will have an impact across the organization and can't be rolled back immediately.** This is an expected message."
+              }
+            ]
+          },
+          {
+            "id": "ms.teams.2.2v2",
+            "title": "Unmanaged users SHALL NOT be enabled to initiate contact with internal users.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.2.2v2"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-7",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-7"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-8"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.2.2v2_smt",
+                "name": "statement",
+                "prose": "Unmanaged users SHALL NOT be enabled to initiate contact with internal users."
+              },
+              {
+                "id": "ms.teams.2.2v2_gdn",
+                "name": "guidance",
+                "prose": "Allowing contact from unmanaged users can expose users to email and contact address harvesting. This policy provides protection against this type of harvesting."
+              },
+              {
+                "id": "ms.teams.2.2v2_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To ensure unmanaged users cannot initiate contact with internal users:\n\n1.  Sign in to the **Microsoft Teams admin center**.\n\n2.  Select **External collaboration** > **External access** > **Policies** (Tab).\n\n3.  Select **Global (Org-wide Default)**.\n\n4.  On the **Edit policy details** screen, set **People in my org can chat and have meetings with external users who have unmanaged Microsoft accounts** to one of the following:\n    1. To completely block contact with unmanaged users, toggle the setting to the **Off** position.\n    2. To allow contact with unmanaged users only if the internal user initiates the contact:\n        - Toggle the setting to the **On** position.\n        - Clear the check next to **People in my org can join external meetings and receive new chats from users who have unmanaged Microsoft accounts.**.\n\n5.  Click **Save** and then **Confirm**.\n\n    **NOTE:** You'll receive a pop-up at this stage stating **Changes will take time to take effect - Changes to Global (Org-wide default) will have an impact across the organization and can't be rolled back immediately.** This is an expected message.\n\n6.\tIf custom policies exist on the tenant, repeat these steps for each policy, selecting the appropriate policy in step 3."
+              }
+            ]
+          },
+          {
+            "id": "ms.teams.2.3v2",
+            "title": "Internal users SHOULD NOT be enabled to initiate contact with unmanaged users.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD NOT"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.2.3v2"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-7",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-7"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-7.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-7(10)(a)"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.2.3v2_smt",
+                "name": "statement",
+                "prose": "Internal users SHOULD NOT be enabled to initiate contact with unmanaged users."
+              },
+              {
+                "id": "ms.teams.2.3v2_gdn",
+                "name": "guidance",
+                "prose": "Contact with unmanaged users can pose the risk of data leakage and other security threats. This policy provides protection by disabling internal user access to unmanaged users."
+              },
+              {
+                "id": "ms.teams.2.3v2_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To ensure internal users cannot initiate contact with unmanaged users:\n\n1.  Sign in to the **Microsoft Teams admin center**.\n\n2.  Select **External collaboration** > **External access** > **Policies** (Tab).\n\n3.  Select **Global (Org-wide Default)**.\n\n4.  To completely block contact with unmanaged users, under **Edit policy details**, set **People in my org can chat and have meetings with external users who have unmanaged Microsoft accounts** to the **Off** position.\n\n5.  Click **Save** and then **Confirm**.\n\n    **NOTE:** You'll receive a pop-up at this stage stating **Changes will take time to take effect - Changes to Global (Org-wide default) will have an impact across the organization and can't be rolled back immediately.** This is an expected message.\n\n6.\tIf custom policies exist on the tenant, repeat these steps for each policy, selecting the appropriate policy in step 3."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.teams.4",
+        "title": "Teams Email Integration",
+        "controls": [
+          {
+            "id": "ms.teams.4.1v1",
+            "title": "Teams email integration SHALL be disabled.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHALL"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.4.1v1"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#si-8",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SI-8"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#sc-7.10",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 SC-7(10)(a)"
+              },
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#ac-4",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 AC-4"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.4.1v1_smt",
+                "name": "statement",
+                "prose": "Teams email integration SHALL be disabled."
+              },
+              {
+                "id": "ms.teams.4.1v1_gdn",
+                "name": "guidance",
+                "prose": "Microsoft Teams email integration associates a Microsoft, not tenant domain, email address with a Teams channel. Channel emails are addressed using the Microsoft-owned domain <code>&lt;teams.ms&gt;</code>. By disabling Teams email integration, an agency prevents potentially sensitive Teams messages from being sent through external email gateways."
+              },
+              {
+                "id": "ms.teams.4.1v1_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To ensure users cannot send emails and their contents to a channel email address:\n\n1.  Sign in to the **Microsoft Teams admin center**.\n\n2.  Select **Teams** > **Teams Settings**.\n\n3.  Under the **Email integration** section, ensure **Users can send emails to a channel email address** is set to the **Off** position.\n\n4. Under the same section, ensure the **Accept channel email from these SMTP domains** field has no domains entered and that it remains empty.\n\n5.  Select **Save** (if applicable)."
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ms.teams.5",
+        "title": "App Management",
+        "controls": [
+          {
+            "id": "ms.teams.5.1v2",
+            "title": "Agencies SHOULD only allow installation of Microsoft apps approved by the agency.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.5.1v2"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-11",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-11"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.5.1v2_smt",
+                "name": "statement",
+                "prose": "Agencies SHOULD only allow installation of Microsoft apps approved by the agency."
+              },
+              {
+                "id": "ms.teams.5.1v2_gdn",
+                "name": "guidance",
+                "prose": "Allowing Teams integration with all Microsoft apps can expose the agency to potential vulnerabilities present in those apps. By only allowing specific apps and blocking all others, the agency can better manage app integration and potential exposure points."
+              },
+              {
+                "id": "ms.teams.5.1v2_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To ensure users can only install Microsoft apps approved by the agency:\n\n1.  Sign in to the **Microsoft Teams admin center**.\n\n2.  Select **Teams apps** > **Manage apps**.\n\n3.  In the upper right-hand corner select **Actions**.\n\n4.  Select **Org-wide app settings**.\n\n5.  Under the **Microsoft apps** section, ensure it is set to the **On** position.\n\n6.  Click **Save** (if applicable).\n\n    **NOTE:** This will make all \"Microsoft apps\" in the application list available to \"Everyone.\" If custom adjustments are needed, on an app by app basis, follow the remaining instructions below. Additionally, previously configured availability settings for individual apps may persist after changing the global toggle and should be reviewed to ensure they remain appropriate."
+              }
+            ]
+          },
+          {
+            "id": "ms.teams.5.2v2",
+            "title": "Agencies SHOULD only allow installation of third-party apps approved by the agency.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.5.2v2"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-11",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-11"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.5.2v2_smt",
+                "name": "statement",
+                "prose": "Agencies SHOULD only allow installation of third-party apps approved by the agency."
+              },
+              {
+                "id": "ms.teams.5.2v2_gdn",
+                "name": "guidance",
+                "prose": "Allowing Teams integration with third-party apps can expose the agency to potential vulnerabilities present in an app not managed by the agency. By allowing only specific apps approved by the agency and blocking all others, the agency can limit its exposure to third-party app vulnerabilities."
+              },
+              {
+                "id": "ms.teams.5.2v2_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To ensure users can only install third-party apps approved by the agency:\n\n1.  Sign in to the **Microsoft Teams admin center**.\n\n2.  Select **Teams apps** > **Manage apps**.\n\n3.  In the upper right-hand corner select **Actions**.\n\n4.  Select **Org-wide app settings**.\n\n5.  Under the **Third-party apps** section, ensure it is set to the **Off** position.\n\n6.  Click **Save** (if applicable).\n\n    **NOTE:** This will make all \"Third-party\" apps in the application list available to \"No one.\" If custom adjustments are needed, on an app by app basis, follow the remaining instructions below. Additionally, previously configured availability settings for individual apps may persist after changing the global toggle and should be reviewed to ensure they remain appropriate."
+              }
+            ]
+          },
+          {
+            "id": "ms.teams.5.3v2",
+            "title": "Agencies SHOULD only allow installation of custom apps approved by the agency.",
+            "props": [
+              {
+                "name": "obligation",
+                "ns": "https://scuba.example/ns",
+                "value": "SHOULD"
+              },
+              {
+                "name": "label",
+                "value": "MS.TEAMS.5.3v2"
+              }
+            ],
+            "links": [
+              {
+                "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json#cm-11",
+                "rel": "related",
+                "text": "NIST SP 800-53 Rev 5 CM-11"
+              }
+            ],
+            "parts": [
+              {
+                "id": "ms.teams.5.3v2_smt",
+                "name": "statement",
+                "prose": "Agencies SHOULD only allow installation of custom apps approved by the agency."
+              },
+              {
+                "id": "ms.teams.5.3v2_gdn",
+                "name": "guidance",
+                "prose": "Allowing Teams integration with custom apps can expose the agency to potential vulnerabilities present in an app not managed by the agency. By allowing only specific apps approved by the agency and blocking all others, the agency can limit its exposure to custom app vulnerabilities."
+              },
+              {
+                "id": "ms.teams.5.3v2_rem",
+                "name": "remediation",
+                "ns": "https://scuba.example/ns",
+                "prose": "To ensure users can only install custom apps approved by the agency:\n\n1.  Sign in to the **Microsoft Teams admin center**.\n\n2.  Select **Teams apps** > **Manage apps**.\n\n3.  In the upper right-hand corner select **Actions**.\n\n4.  Select **Org-wide app settings**.\n\n5.  Under the **Custom apps** section, ensure it is set to the **Off** position.\n\n6.  Click **Save** (if applicable).\n\n    **NOTE:** This will make all \"Custom apps\" in the application list available to \"No one.\" If custom adjustments are needed, on an app by app basis, follow the remaining instructions below. Additionally, previously configured availability settings for individual apps may persist after changing the global toggle and should be reviewed to ensure they remain appropriate."
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
