@@ -26,6 +26,7 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pandas as pd
 import streamlit as st
 
 HERE = Path(__file__).resolve().parent
@@ -68,6 +69,12 @@ GENERIC_ERROR = ("The AI service didn't return an answer. Check the Azure OpenAI
 CONTROLS_DIR = ROOT / "oscal" / "Controls"   # the SCuBA catalogs an uploaded scan is checked against
 SAMPLE_SCAN = ROOT / "data" / "sample" / "scuba_results_sample.json"
 MAX_UPLOAD_MB = 50
+STALE_SCAN_DAYS = 30   # older scans get a "re-run ScubaGear" note
+NOT_ASSESSED_REASONS = {   # ScubaGear's Result -> why the control has no pass/fail
+    "N/A": "ScubaGear can't check this policy automatically.",
+    "Error": "ScubaGear hit an error checking this policy; re-run the scan.",
+    "Omitted": "Left out of the scan by the ScubaGear configuration.",
+}
 PIPELINE_TIMEOUT = 180  # seconds per step
 
 
@@ -109,7 +116,7 @@ def ask(assistant, request, history):
 
 # --- Uploaded ScubaGear results -------------------------------------------------
 def check_scan(name, raw):
-    """Raise ValueError unless the file is a ScubaGear results JSON file."""
+    """The parsed file if it is a ScubaGear results JSON file; raises ValueError otherwise."""
     if not name.lower().endswith(".json"):
         raise ValueError(f"{name} is not a .json file. Upload the ScubaResults JSON file that ScubaGear produced.")
     try:
@@ -119,6 +126,26 @@ def check_scan(name, raw):
     if not isinstance(doc, dict) or not {"MetaData", "Results"} <= doc.keys():
         raise ValueError(f"{name} is JSON, but not a ScubaGear results report (it has no MetaData "
                          "and Results sections). Upload the ScubaResults JSON file from your ScubaGear output.")
+    return doc
+
+
+def scan_results(doc):
+    """ScubaGear's own Result for every policy in the scan, e.g. {"MS.AAD.2.2v1": "N/A"}. Used to say
+    why a control is not assessed; the pipeline itself only keeps the controls it could judge."""
+    out = {}
+    for groups in (doc.get("Results") or {}).values():
+        for group in groups if isinstance(groups, list) else []:
+            for c in group.get("Controls", []) if isinstance(group, dict) else []:
+                if isinstance(c, dict) and c.get("Control ID"):
+                    out[c["Control ID"]] = c.get("Result") or ""
+    return out
+
+
+def not_assessed_reason(control_id, results):
+    result = results.get(control_id)
+    if result is None:
+        return "Not in the scan: newer than this ScubaGear version."
+    return NOT_ASSESSED_REASONS.get(result, f"ScubaGear returned {result!r}, which is not a pass or fail.")
 
 
 def combine_catalogs(folder, dest):
@@ -145,10 +172,11 @@ def pipeline_message(stderr):
 
 
 def process_scan(name, raw):
-    """Validate a scan file and run it through the pipeline. Returns an Assistant over the new findings.
+    """Validate a scan file and run it through the pipeline. Returns (Assistant over the new findings,
+    ScubaGear's result per policy).
 
     Raises ValueError with a message for the user when the file is rejected."""
-    check_scan(name, raw)
+    results = scan_results(check_scan(name, raw))
     env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     with tempfile.TemporaryDirectory(prefix="scuba-upload-") as tmp:
         tmp = Path(tmp)
@@ -175,7 +203,7 @@ def process_scan(name, raw):
             if r.returncode != 0:
                 log.error("Upload pipeline step failed (%s): %s", label, r.stderr)
                 raise ValueError(f"Couldn't {label}: {pipeline_message(r.stderr)}")
-        return Assistant(tmp / "findings.json")  # reads everything it needs now, so the folder can go
+        return Assistant(tmp / "findings.json"), results  # reads everything it needs now, so the folder can go
 
 
 def reset_for_new_data():
@@ -190,7 +218,7 @@ def load_scan(name, raw):
     """Process a scan and, if it is accepted, make it this session's scan."""
     try:
         with st.spinner("Processing the scan…"):
-            new_assistant = process_scan(name, raw)
+            new_assistant, results = process_scan(name, raw)
     except ValueError as exc:
         st.session_state.upload_error = str(exc)
         return
@@ -198,7 +226,7 @@ def load_scan(name, raw):
         log.exception("Could not process the scan")
         st.session_state.upload_error = "The scan couldn't be processed. Check that the file is ScubaGear output."
         return
-    st.session_state.upload = {"name": name, "assistant": new_assistant}
+    st.session_state.upload = {"name": name, "assistant": new_assistant, "scan_results": results}
     st.session_state.upload_error = None
     reset_for_new_data()
     st.session_state.flash = f"Loaded the scan for {new_assistant.info.get('tenant') or 'your tenant'}."
@@ -272,6 +300,28 @@ def status_badge(status, label=None, help=None, scuba_result=""):
 
 def goto(tab):
     st.session_state.tab = tab
+
+
+def scan_age_days(iso):
+    try:
+        return (datetime.now(timezone.utc) - datetime.fromisoformat(iso).astimezone(timezone.utc)).days
+    except (TypeError, ValueError):
+        return None
+
+
+def ai_off_note():
+    """Says plainly what needs the AI and that everything else still works."""
+    st.info(f"**AI features are off.** The chat, Ask AI and the PDF report need Azure OpenAI. {problem} "
+            "Everything else works without it.", icon=":material/cloud_off:")
+
+
+def styled_status(rows):
+    """A dataframe with the Status column colour-coded like the badges."""
+    colors = {"Pass": ("#1F7A5A", "#E4F4EC"), "Fail": ("#B3261E", "#FBEAE8"),
+              "Warning": ("#9A5A00", "#FDF3E0"), "Not assessed": ("#5B6A80", "#ECEFF4")}
+    return pd.DataFrame(rows).style.map(
+        lambda v: f"color: {colors[v][0]}; background-color: {colors[v][1]}; font-weight: 600" if v in colors else "",
+        subset=["Status"])
 
 
 def ask_ai_button(f, key_prefix):
@@ -436,8 +486,10 @@ def clear_scan():
 
 
 # --- Page ---------------------------------------------------------------------
+loaded = st.session_state.upload is not None
 st.set_page_config(page_title="SCuBA posture assistant", page_icon=ASSISTANT_AVATAR,
-                   layout="wide" if st.session_state.upload else "centered")   # the dashboard uses the full width
+                   layout="wide" if loaded else "centered",           # the dashboard uses the full width
+                   initial_sidebar_state="expanded" if loaded else "collapsed")
 
 problem = ai_problem()
 
@@ -446,7 +498,7 @@ with st.sidebar:
     st.caption("CISA SCuBA baseline for Microsoft Entra ID (MS.AAD)")
     if problem:
         st.badge("AI offline", icon=":material/cloud_off:", color="red")
-        st.caption(problem.replace("`", ""))  # inline code is unreadable on the dark sidebar theme
+        st.caption("The chat, Ask AI and the PDF report are unavailable.")
     else:
         st.badge("AI ready", icon=":material/cloud_done:", color="green")
 
@@ -471,6 +523,25 @@ if st.session_state.upload is None:
         with st.container(horizontal=True, vertical_alignment="center"):
             st.caption("No scan to hand?", width="content")
             st.button("Try the sample scan", icon=":material/science:", type="tertiary", on_click=request_sample)
+        with st.expander("Where do I find this file?", icon=":material/help:"):
+            st.markdown(
+                "1. Run ScubaGear in PowerShell, for example `Invoke-SCuBA -ProductNames aad`.\n"
+                "2. Open the output folder it creates, named like `M365BaselineConformance_<date>`.\n"
+                "3. Upload the **ScubaResults** JSON file from that folder (`ScubaResults.json`, or "
+                "`ScubaResults_<id>.json` in newer versions).")
+
+    st.markdown("**What you'll get**")
+    with st.container(horizontal=True, gap="small"):
+        for icon, title, text in (
+                (":material/dashboard:", "Overview", "Pass rates by area and what to fix first"),
+                (":material/fact_check:", "Findings", "Every failed control with the scan result and fix steps"),
+                (":material/forum:", "Ask the AI", "Questions answered with the verified results cited"),
+                (":material/picture_as_pdf:", "Report", "A PDF compliance report to share")):
+            with st.container(border=True):
+                st.markdown(f"{icon} **{title}**")
+                st.caption(text)
+    if problem:
+        ai_off_note()
     st.caption(":material/lock: Your file is processed in memory on this server and never saved. Only you "
                "can see it, and it is gone when you refresh or close the page. When you use the chat or the "
                "report, the scan's per-control results are sent to Azure OpenAI.")
@@ -482,6 +553,9 @@ findings, info, summary = assistant.findings, assistant.info, assistant.summary
 failures = prioritized_failures(findings)
 high_priority = [f for f in failures if f.priority == "high"]
 warnings = sum(result_badge(f.status, f.scuba_result) == WARNING_BADGE for f in failures)
+unassessed = [f for f in findings if f.status == "NOT ASSESSED"]
+results_by_id = st.session_state.upload.get("scan_results", {})
+age = scan_age_days(info.get("scan_time"))
 if st.session_state.flash:
     st.toast(st.session_state.flash, icon=":material/check_circle:")
     st.session_state.flash = None
@@ -493,7 +567,8 @@ with st.sidebar:
     st.markdown(
         f":material/domain: {info.get('tenant') or 'Unknown tenant'}  \n"
         f":material/language: {info.get('domain') or 'Unknown domain'}  \n"
-        f":material/schedule: {format_time(info.get('scan_time'))}  \n"
+        f":material/schedule: {format_time(info.get('scan_time'))}"
+        + (f" ({age} day{'s' if age != 1 else ''} ago)" if age is not None else "") + "  \n"
         f":material/build: ScubaGear {info.get('tool_version') or 'unknown'}"
     )
     st.button("Upload a different scan", icon=":material/upload:", width="stretch", on_click=clear_scan)
@@ -501,6 +576,11 @@ with st.sidebar:
 st.title("SCuBA posture assistant", icon=ASSISTANT_AVATAR)
 st.caption(f"ScubaGear scan of {info.get('tenant') or 'your tenant'}, checked against the CISA SCuBA baseline for "
            "Microsoft Entra ID. Statuses come from the scan; anything the AI writes is labelled as AI analysis.")
+if age is not None and age > STALE_SCAN_DAYS:
+    st.warning(f"**This scan is {age} days old** (run {format_time(info.get('scan_time'))}). The tenant's settings "
+               "may have changed since; re-run ScubaGear for an up-to-date picture.", icon=":material/history:")
+if problem:
+    ai_off_note()
 
 tab_overview, tab_findings, tab_chat, tab_report = st.tabs(
     [TAB_OVERVIEW, TAB_FINDINGS, TAB_CHAT, TAB_REPORT], key="tab", on_change="rerun")
@@ -543,6 +623,24 @@ with tab_overview:
             "Not assessed": st.column_config.NumberColumn(width="small"),
         })
 
+    if unassessed:
+        reasons = [not_assessed_reason(f.control_id, results_by_id) for f in unassessed]
+        cant_check = sum(results_by_id.get(f.control_id) == "N/A" for f in unassessed)
+        missing = sum(f.control_id not in results_by_id for f in unassessed)
+        parts = [f"{cant_check} can't be checked by ScubaGear automatically" if cant_check else "",
+                 f"{missing} {'is' if missing == 1 else 'are'} newer than ScubaGear "
+                 f"{info.get('tool_version') or ''}".rstrip() if missing else ""]
+        st.subheader(f"Not assessed ({len(unassessed)})", icon=":material/help:")
+        st.caption("ScubaGear returned no pass or fail for these controls, so their status is unknown"
+                   + (": " + " and ".join(p for p in parts if p) if any(parts) else "") + ". Check them by hand.")
+        st.dataframe(
+            [{"Control": f.control_id, "Title": f.title, "Obligation": f.obligation, "Why": why}
+             for f, why in zip(unassessed, reasons)],
+            hide_index=True,
+            column_config={"Control": st.column_config.TextColumn(width=115),
+                           "Obligation": st.column_config.TextColumn(width=95),
+                           "Why": st.column_config.TextColumn(width="large")})
+
 # Findings: every failed control with its verified facts, filterable
 with tab_findings:
     if not failures:
@@ -565,14 +663,24 @@ with tab_findings:
                     finding_details(f)
 
     st.subheader("All controls", icon=":material/table_rows:")
-    st.dataframe(
-        [{"Control": f.control_id, "Title": f.title, "Area": f.group, "Obligation": f.obligation,
-          "Status": result_badge(f.status, f.scuba_result)[0]} for f in findings],
-        hide_index=True,
-        column_config={"Control": st.column_config.TextColumn(width="small"),
-                       "Obligation": st.column_config.TextColumn(width="small"),
-                       "Status": st.column_config.TextColumn(width="small")},
-    )
+    with st.container(horizontal=True, vertical_alignment="bottom", gap="medium"):
+        query = st.text_input("Search", placeholder="Control ID, title or area", type="search", live=True,
+                              icon=":material/search:", key="controls_search", width=320)
+        picked = st.pills("Status", ["Pass", "Fail", "Warning", "Not assessed"], selection_mode="multi",
+                          key="controls_status")
+    rows = [{"Control": f.control_id, "Title": f.title, "Area": f.group, "Obligation": f.obligation,
+             "Status": result_badge(f.status, f.scuba_result)[0]} for f in findings]
+    q = (query or "").strip().lower()
+    rows = [r for r in rows if (not q or q in f"{r['Control']} {r['Title']} {r['Area']}".lower())
+            and (not picked or r["Status"] in picked)]
+    st.caption(f"Showing {len(rows)} of {len(findings)} controls.")
+    if rows:
+        st.dataframe(styled_status(rows), hide_index=True,
+                     column_config={"Control": st.column_config.TextColumn(width=115),
+                                    "Title": st.column_config.TextColumn(width="large"),
+                                    "Area": st.column_config.TextColumn(width="medium"),
+                                    "Obligation": st.column_config.TextColumn(width=95),
+                                    "Status": st.column_config.TextColumn(width=110)})
 
 # Ask the AI: the chat
 with tab_chat:
