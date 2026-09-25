@@ -7,11 +7,20 @@ analysis, labelled as AI output, next to the verified OSCAL facts for every cont
 The scan summary comes from the same verified records the AI reads (ai/findings.py), so the page
 and the AI always agree. The compliance report is written by the AI (Assistant.compliance_report)
 and turned into a PDF by report_pdf.py. Azure OpenAI settings come from .env (see .env.example).
+
+Users can upload their own ScubaGear results (.json). The upload is checked against the SCuBA
+catalogs in oscal/Controls by the same pipeline as the repo data (pipeline/make_assessment_results.py,
+then comparison/compare_oscal.py), in a temporary folder; only that user's session switches to it,
+and the files in oscal/ are untouched. Controls the scan has no record for are NOT_ASSESSED.
 """
 import importlib.util
+import json
 import logging
 import os
+import shutil
+import subprocess
 import sys
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -46,6 +55,10 @@ SUGGESTIONS = {
 
 GENERIC_ERROR = ("The AI service didn't return an answer. Check the Azure OpenAI settings in `.env` "
                  "and your network connection, then try again.")
+
+CONTROLS_DIR = ROOT / "oscal" / "Controls"   # the SCuBA catalogs an uploaded scan is checked against
+MAX_UPLOAD_MB = 50
+PIPELINE_TIMEOUT = 180  # seconds per step
 
 
 # --- Data and AI -------------------------------------------------------------
@@ -88,6 +101,117 @@ def ask(assistant, request, history):
     if request["kind"] == "summary":
         return assistant.executive_summary()
     return assistant.answer(request["prompt"], history)
+
+
+# --- Uploaded ScubaGear results -------------------------------------------------
+def check_upload(uploaded):
+    """The uploaded file's bytes if it is a ScubaGear results JSON file, else raise ValueError."""
+    if not uploaded.name.lower().endswith(".json"):
+        raise ValueError(f"{uploaded.name} is not a .json file. Upload the ScubaResults JSON file that "
+                         "ScubaGear produced.")
+    raw = uploaded.getvalue()
+    try:
+        doc = json.loads(raw.decode("utf-8-sig"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise ValueError(f"{uploaded.name} is not valid JSON. It may be damaged or not a ScubaGear file.") from None
+    if not isinstance(doc, dict) or not {"MetaData", "Results"} <= doc.keys():
+        raise ValueError(f"{uploaded.name} is JSON, but not a ScubaGear results report (it has no MetaData "
+                         "and Results sections). Upload the ScubaResults JSON file from your ScubaGear output.")
+    return raw
+
+
+def combine_catalogs(folder, dest):
+    """Write the SCuBA catalogs in `folder` (oscal/Controls) as one catalog file, which is what the
+    assessment results builder takes. With a single catalog this is a plain copy."""
+    files = sorted(Path(folder).glob("*.json"))
+    if not files:
+        raise ValueError(f"No SCuBA catalogs found in {folder}.")
+    if len(files) == 1:
+        shutil.copy(files[0], dest)
+        return
+    combined = json.loads(files[0].read_text(encoding="utf-8-sig"))
+    for f in files[1:]:
+        combined["catalog"]["groups"] += json.loads(f.read_text(encoding="utf-8-sig"))["catalog"].get("groups", [])
+    Path(dest).write_text(json.dumps(combined), encoding="utf-8")
+
+
+def pipeline_message(stderr):
+    """The pipeline scripts stop with one plain message; show it, but never a raw traceback."""
+    lines = [line.strip() for line in stderr.splitlines() if line.strip()]
+    if not lines or any(line.startswith("Traceback") for line in lines):
+        return "the pipeline hit an unexpected error. Check that the file is complete ScubaGear output."
+    return lines[-1].removeprefix("ERROR: ")
+
+
+def process_upload(uploaded):
+    """Validate the upload and run it through the pipeline. Returns an Assistant over the new findings.
+
+    Raises ValueError with a message for the user when the file is rejected."""
+    raw = check_upload(uploaded)
+    env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
+    with tempfile.TemporaryDirectory(prefix="scuba-upload-") as tmp:
+        tmp = Path(tmp)
+        (tmp / "scuba-results.json").write_bytes(raw)
+        # The builder links its outputs to its inputs by relative path, which fails on Windows when the
+        # temp folder and the repo are on different drives, so every file it links to lives in tmp.
+        combine_catalogs(CONTROLS_DIR, tmp / "catalog.json")
+        steps = [
+            ("convert the scan to OSCAL", [
+                ROOT / "pipeline" / "make_assessment_results.py", "--results", tmp / "scuba-results.json",
+                "--catalog", tmp / "catalog.json", "--out", tmp / "assessment-results.json",
+                "--plan-out", tmp / "assessment-plan.json",
+                "--allow-missing"]),  # controls the scan has no record for come out NOT_ASSESSED
+            ("compare the scan with the SCuBA catalog", [
+                ROOT / "comparison" / "compare_oscal.py", "--scuba", CONTROLS_DIR,
+                "--scubagear", tmp / "assessment-results.json", "--output", tmp / "findings.json"]),
+        ]
+        for label, args in steps:
+            try:
+                r = subprocess.run([sys.executable, *map(str, args)], capture_output=True, text=True,
+                                   encoding="utf-8", errors="replace", timeout=PIPELINE_TIMEOUT, cwd=ROOT, env=env)
+            except subprocess.TimeoutExpired:
+                raise ValueError(f"Couldn't {label}: it took longer than {PIPELINE_TIMEOUT} seconds.") from None
+            if r.returncode != 0:
+                log.error("Upload pipeline step failed (%s): %s", label, r.stderr)
+                raise ValueError(f"Couldn't {label}: {pipeline_message(r.stderr)}")
+        return Assistant(tmp / "findings.json")  # reads everything it needs now, so the folder can go
+
+
+def reset_for_new_data():
+    """Answers and reports about the previous scan no longer apply."""
+    st.session_state.messages = []
+    st.session_state.pending = None
+    st.session_state.report = None
+    st.session_state.report_error = None
+
+
+def handle_upload(uploaded):
+    """Process a newly uploaded file once; switch back to the repo data when the file is removed."""
+    if uploaded is None:
+        if st.session_state.upload or st.session_state.upload_error:
+            if st.session_state.upload:
+                reset_for_new_data()
+            st.session_state.upload = None
+            st.session_state.upload_error = None
+        st.session_state.upload_file_id = None
+        return
+    if uploaded.file_id == st.session_state.upload_file_id:
+        return  # already handled on an earlier rerun
+    st.session_state.upload_file_id = uploaded.file_id
+    try:
+        with st.spinner("Processing the scan…"):
+            new_assistant = process_upload(uploaded)
+    except ValueError as exc:
+        st.session_state.upload_error = str(exc)
+        return
+    except Exception:
+        log.exception("Could not process the uploaded scan")
+        st.session_state.upload_error = "The scan couldn't be processed. Check that the file is ScubaGear output."
+        return
+    st.session_state.upload = {"name": uploaded.name, "assistant": new_assistant}
+    st.session_state.upload_error = None
+    reset_for_new_data()
+    st.toast(f"Loaded the scan for {new_assistant.info.get('tenant') or 'your tenant'}.", icon=":material/check_circle:")
 
 
 # --- Compliance report (AI-written, delivered as a PDF) ------------------------
@@ -183,6 +307,10 @@ if "report" not in st.session_state:
     st.session_state.report = None             # {"pdf", "generated", "file_name"} once generated
     st.session_state.report_requested = False
     st.session_state.report_error = None
+if "upload" not in st.session_state:
+    st.session_state.upload = None             # {"name", "assistant"} while an uploaded scan is in use
+    st.session_state.upload_error = None
+    st.session_state.upload_file_id = None
 
 
 def queue(kind, prompt, control_id=None):
@@ -208,16 +336,6 @@ def request_report():
 # --- Page ---------------------------------------------------------------------
 st.set_page_config(page_title="SCuBA posture assistant", page_icon=ASSISTANT_AVATAR, layout="centered")
 
-try:
-    assistant = get_assistant()
-except Exception:
-    log.exception("Could not load the OSCAL results")
-    st.error("Couldn't load `oscal/findings.json`. Regenerate it with `comparison/compare_oscal.py`, "
-             "then reload this page.", icon=":material/error:")
-    st.stop()
-
-findings, info, summary = assistant.findings, assistant.info, assistant.summary
-failures = prioritized_failures(findings)
 problem = ai_problem()
 
 with st.sidebar:
@@ -231,6 +349,28 @@ with st.sidebar:
 
     st.space("small")
     st.markdown("**Scan**")
+    uploaded = st.file_uploader(
+        "Upload ScubaGear results", type=["json"], key="scan_upload", max_upload_size=MAX_UPLOAD_MB,
+        help="The ScubaResults JSON file from a ScubaGear run. Only .json files are accepted.")
+    handle_upload(uploaded)
+    if st.session_state.upload_error:
+        st.error(st.session_state.upload_error, icon=":material/block:")
+
+    if st.session_state.upload:
+        assistant = st.session_state.upload["assistant"]
+        st.caption(f":material/upload_file: Showing your upload: {st.session_state.upload['name']}")
+    else:
+        try:
+            assistant = get_assistant()
+        except Exception:
+            log.exception("Could not load the OSCAL results")
+            st.error("Couldn't load oscal/findings.json. Upload a ScubaGear results file above, or "
+                     "regenerate it with comparison/compare_oscal.py.", icon=":material/error:")
+            st.stop()
+        st.caption(":material/folder: Showing the repo's scan (oscal/findings.json)")
+
+    findings, info, summary = assistant.findings, assistant.info, assistant.summary
+    failures = prioritized_failures(findings)
     st.markdown(
         f":material/domain: {info.get('tenant') or 'Unknown tenant'}  \n"
         f":material/language: {info.get('domain') or 'Unknown domain'}  \n"

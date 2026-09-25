@@ -296,3 +296,32 @@ def test_every_file_link_resolves_from_where_the_file_is_written(out_file):
     hrefs += [l["href"] for l in plan["metadata"]["links"]]
     for href in hrefs:
         assert (out_file.parent / href).exists(), f"link points at a file that does not exist: {href}"
+
+
+def without_control(tmp_path, control_id):
+    """A copy of the report with one control's record removed."""
+    doc = read(RESULTS)
+    for groups in doc["Results"].values():
+        for g in groups:
+            g["Controls"] = [c for c in g["Controls"] if c["Control ID"] != control_id]
+    path = tmp_path / "scuba_results_missing.json"
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    return path
+
+
+def test_a_control_missing_from_the_scan_is_refused_by_default(tmp_path):
+    scan = without_control(tmp_path, "MS.AAD.1.1v1")
+    r = subprocess.run([sys.executable, str(PIPELINE / "make_assessment_results.py"), "--results", str(scan),
+                        "--catalog", str(CATALOG), "--out", str(tmp_path / "ar.json")],
+                       capture_output=True, text=True, cwd=PIPELINE)
+    assert r.returncode != 0 and "In the catalog but not in the scan results" in r.stderr
+
+
+def test_allow_missing_skips_a_control_missing_from_the_scan(tmp_path):
+    scan = without_control(tmp_path, "MS.AAD.1.1v1")
+    out = tmp_path / "ar.json"
+    build(out, results=scan, extra=["--allow-missing"])
+    doc = read(out)["assessment-results"]["results"][0]
+    targets = {f["target"]["target-id"] for f in doc["findings"]}
+    assert "ms.aad.1.1v1_smt" not in targets             # no verdict is invented for it
+    assert "ms.aad.2.1v1_smt" in targets

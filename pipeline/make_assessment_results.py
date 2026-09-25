@@ -29,7 +29,9 @@ ScubaGear Result -> OSCAL (see VERDICTS below):
 Any other Result value stops the script rather than being guessed at.
 
 Rules this script enforces (it stops with a clear message rather than guessing):
-  - every catalog control must have a record in the scan
+  - every catalog control must have a record in the scan, unless --allow-missing is given: then a
+    control with no record is skipped with a warning, like N/A (a catalog can be newer than the
+    ScubaGear version that ran, e.g. ScubaGear 1.8.0 has no MS.AAD.5.5v1-5.7v1 or MS.AAD.9.1v1)
   - each Control ID appears only once
 Scan records for policies outside the catalog are ignored.
 
@@ -199,18 +201,23 @@ def build_plan(catalog_path, ssp_href, out_dir="."):
                         f"'{catalog_title}' against its result (method: TEST).")])
 
 
-def build(results_path, catalog_path, scan_time, plan_href, out_dir="."):
+def build(results_path, catalog_path, scan_time, plan_href, out_dir=".", allow_missing=False):
     catalog_title, controls = load_catalog(catalog_path)
     meta, scan = load_scan(results_path)
     uid = make_uid(results_path, scan_time)
     report = rel_href(results_path, out_dir)   # e.g. ../data/sample/scuba_results_sample.json
 
     missing = [c for c in controls if c not in scan]
-    if missing:
-        raise SystemExit(f"In the catalog but not in the scan results: {missing}")
+    if missing and not allow_missing:
+        raise SystemExit(f"In the catalog but not in the scan results: {missing} "
+                         "(use --allow-missing to record them as not assessed)")
+    for cid in missing:
+        print(f"  warning: {controls[cid]['label']} has no record in the scan results; skipped", file=sys.stderr)
 
     observations, findings, risks, reviewed = [], [], [], []
     for cid, ctl in controls.items():
+        if cid not in scan:
+            continue
         rec = scan[cid]
         pid, outcome = rec["Control ID"], rec["Result"]
         if outcome not in VERDICTS:
@@ -291,6 +298,9 @@ def main():
     ap.add_argument("--scan-time", type=datetime.fromisoformat, default=None,
                     help="override the scan time, ISO format, e.g. 2026-09-23T14:30:00+00:00 "
                          "(default: MetaData.TimestampZulu from the results file)")
+    ap.add_argument("--allow-missing", action="store_true",
+                    help="skip catalog controls that have no record in the scan (they come out as not "
+                         "assessed) instead of stopping")
     args = ap.parse_args()
     for f in (args.results, args.catalog):
         if not f.exists():
@@ -302,7 +312,7 @@ def main():
     plan_href = Path(os.path.relpath(plan_out, args.out.parent)).as_posix()   # how the results find the plan
     plan = build_plan(args.catalog, args.ssp_href, out_dir=plan_out.parent)
     doc, (n_obs, n_find, n_risk) = build(args.results, args.catalog, scan_time, plan_href,
-                                         out_dir=args.out.parent)
+                                         out_dir=args.out.parent, allow_missing=args.allow_missing)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     plan_out.parent.mkdir(parents=True, exist_ok=True)
     plan.oscal_write(plan_out)
