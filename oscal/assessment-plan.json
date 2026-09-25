@@ -2,8 +2,8 @@
   "assessment-plan": {
     "uuid": "833121e5-cc5c-5af1-aa78-7521e0d6b011",
     "metadata": {
-      "title": "SCuBA Microsoft Entra ID (MS.AAD) Assessment Plan",
-      "last-modified": "2026-09-25T20:57:36+00:00",
+      "title": "SCuBA Assessment Plan: CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline",
+      "last-modified": "2026-09-25T21:48:03+00:00",
       "version": "0.1.0",
       "oscal-version": "1.1.2",
       "links": [

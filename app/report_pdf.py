@@ -212,18 +212,24 @@ class ReportPDF(FPDF):
 
 
 # --- sections ------------------------------------------------------------------------------------
+def products_text(info):
+    return ", ".join(info.get("products") or []) or "Microsoft 365"
+
+
 def _cover(pdf, info, summary, failures, generated_at):
     pdf.set_font("helvetica", "B", 24)
     pdf.set_text_color(*NAVY)
     pdf.cell(0, 12, "SCuBA compliance report", new_x="LMARGIN", new_y="NEXT")
     pdf.set_font("helvetica", "", 12)
     pdf.set_text_color(*MUTED)
-    pdf.cell(0, 7, "Microsoft Entra ID against the CISA SCuBA MS.AAD baseline", new_x="LMARGIN", new_y="NEXT")
+    pdf.multi_cell(0, 7, plain(f"{products_text(info)} against the CISA SCuBA baselines"), align="L",
+                   new_x="LMARGIN", new_y="NEXT")
     pdf.ln(6)
 
     details = [
         ("Tenant", f"{info.get('tenant') or 'Unknown'} ({info.get('domain') or 'unknown domain'})"),
         ("Scan date", format_time(info.get("scan_time"))),
+        ("Products", products_text(info)),
         ("Scanner", f"ScubaGear {info.get('tool_version') or 'unknown version'}"),
         ("Report generated", generated_at.strftime("%d %B %Y, %H:%M UTC")),
     ]
@@ -267,10 +273,10 @@ def _cover(pdf, info, summary, failures, generated_at):
 def _scope(pdf, info, summary):
     pdf.section("Scope and method")
     pdf.para(f"This report assesses the {info.get('tenant') or 'unknown'} tenant "
-             f"({info.get('domain') or 'unknown domain'}) against the CISA SCuBA baseline for Microsoft Entra ID "
-             f"(MS.AAD), using a ScubaGear {info.get('tool_version') or ''} scan run on "
+             f"({info.get('domain') or 'unknown domain'}) against the CISA SCuBA baselines for "
+             f"{products_text(info)}, using a ScubaGear {info.get('tool_version') or ''} scan run on "
              f"{format_time(info.get('scan_time'), '%d %B %Y')}. The scan results were converted to OSCAL and "
-             f"compared, control by control, with the {summary['total']}-control SCuBA catalog.")
+             f"compared, control by control, with the {summary['total']} SCuBA policies for those products.")
     pdf.para("Every status, requirement and scan result in this report comes from that comparison; the AI does "
              "not decide whether a control passed. Priority follows each requirement's wording: a failed SHALL "
              "or SHALL NOT requirement is Required and comes first, and a failed SHOULD requirement (reported by "
@@ -294,6 +300,8 @@ def _card(pdf, f, analysis):
     label, fg, bg = result_tag(f)
     pdf.tag(f"ScubaGear: {label}", fg, bg)
     pdf.tag(f.obligation, MUTED, GRAY_BG)
+    if f.product:
+        pdf.tag(f.product, ACCENT, PANEL)
     pdf.ln(8)
 
     def field(name, text, color=TEXT, serif=False):

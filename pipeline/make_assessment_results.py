@@ -182,7 +182,7 @@ def build_plan(catalog_path, ssp_href, out_dir="."):
     component_id = pid("component")
     return AssessmentPlan(
         uuid=pid("assessment-plan"),
-        metadata=Metadata(title="SCuBA Microsoft Entra ID (MS.AAD) Assessment Plan",
+        metadata=Metadata(title=f"SCuBA Assessment Plan: {catalog_title}",
                           last_modified=now_utc(), version="0.1.0", oscal_version=OSCAL_VERSION,
                           links=[Link(href=rel_href(catalog_path, out_dir), rel="reference", text=catalog_title)]),
         # OSCAL requires a link to the System Security Plan (the system owner's description of the
@@ -274,7 +274,7 @@ def build(results_path, catalog_path, scan_time, plan_href, out_dir=".", allow_m
               ("scuba-report-uuid", meta.get("ReportUUID"))]
     result = Result(
         uuid=uid("result", "ms.aad"),
-        title="ScubaGear MS.AAD scan results",
+        title="ScubaGear scan results",
         description=f"Results of a ScubaGear scan of tenant {meta.get('DisplayName', '')} "
                     f"({meta.get('DomainName', '')}), assessed against: {catalog_title}.",
         start=scan_time,   # no end: the results file does not say when the scan finished
@@ -284,7 +284,7 @@ def build(results_path, catalog_path, scan_time, plan_href, out_dir=".", allow_m
 
     return AssessmentResults(
         uuid=uid("assessment-results", "ms.aad"),
-        metadata=Metadata(title="SCuBA Microsoft Entra ID (MS.AAD) Assessment Results",
+        metadata=Metadata(title=f"SCuBA Assessment Results: {catalog_title}",
                           last_modified=now_utc(), version="0.1.0", oscal_version=OSCAL_VERSION,
                           links=[Link(href=rel_href(catalog_path, out_dir), rel="reference", text=catalog_title),
                                  Link(href=report, rel="reference", text="ScubaGear results report")]),

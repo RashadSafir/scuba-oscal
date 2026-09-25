@@ -2,8 +2,8 @@
   "profile": {
     "uuid": "ed55f99b-603f-5e3c-bad9-c8a39c0a96f2",
     "metadata": {
-      "title": "SCuBA Microsoft Entra ID (MS.AAD) profile: all policies",
-      "last-modified": "2026-09-25T20:55:55+00:00",
+      "title": "SCuBA Profile (all policies): CISA SCuBA Microsoft Entra ID (MS.AAD) Baseline - all policies",
+      "last-modified": "2026-09-25T21:48:05+00:00",
       "version": "0.1.0",
       "oscal-version": "1.1.2",
       "links": [

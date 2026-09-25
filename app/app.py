@@ -10,7 +10,8 @@ and turned into a PDF by report_pdf.py. Azure OpenAI settings come from .env (se
 
 There is no default scan: the page opens on an upload panel, and the user uploads their ScubaGear
 results (.json) or tries the sample in data/sample/. The file is checked against the SCuBA catalogs
-in oscal/Controls by the pipeline (pipeline/make_assessment_results.py, then
+in oscal/Controls for the products the scan covers (a catalog is used when the scan has results for
+its policy prefix, e.g. MS.TEAMS; the others are left out and named on the page) by the pipeline (pipeline/make_assessment_results.py, then
 comparison/compare_oscal.py) in a temporary folder that is deleted afterwards. The result lives only
 in that browser session; a refresh starts over. Controls the scan has no record for are NOT_ASSESSED.
 
@@ -48,7 +49,8 @@ from ai.assistant import ENV_VARS, Assistant  # noqa: E402
 from ai.findings import prioritized_failures  # noqa: E402
 from report_pdf import build_pdf  # noqa: E402
 
-sys.path.insert(0, str(ROOT / "pipeline"))
+sys.path[:0] = [str(ROOT / "pipeline"), str(ROOT / "comparison")]
+from compare_oscal import product_name  # noqa: E402
 from validate_oscal import validate  # noqa: E402
 
 log = logging.getLogger(__name__)
@@ -110,6 +112,9 @@ STYLE = """<style>
 [class*="st-key-note_"] { background: #EEF1F3; border-radius: 4px; padding: 0.75rem 1rem; }
 .scb-note-label { font-size: 0.85rem; font-weight: 700; color: #3D5A73; margin: 0 0 0.25rem; }
 .scb-q { font-size: 1.12rem; font-weight: 700; line-height: 1.4; color: #1C2733; margin: 0.4rem 0 0.35rem; max-width: 70ch; }
+.scb-product { font-size: 1.05rem; font-weight: 700; color: #1C2733; margin: 1.1rem 0 0.2rem;
+               padding-top: 0.6rem; border-top: 1px solid #D4D9D2; }
+.scb-product span { font-size: 0.85rem; font-weight: 400; color: #5F6B7A; margin-left: 0.75rem; }
 .scb-rule { border: none; border-top: 1px solid #D4D9D2; margin: 1.1rem 0 0.6rem; }
 .scb-dl, .scb-dl dt, .scb-dl dd { margin-left: 0; padding-left: 0; }
 .scb-dl { margin: 0; }
@@ -144,7 +149,7 @@ PIPELINE_TIMEOUT = 180  # seconds per step
 
 # The OSCAL files an upload produces, in the order of the model chain: (file, what it is)
 OSCAL_FILES = [
-    ("catalog.json", "Catalog", "The SCuBA MS.AAD policies as OSCAL controls, with NIST SP 800-53 links"),
+    ("catalog.json", "Catalog", "The SCuBA policies for the scanned products as OSCAL controls, with NIST SP 800-53 links"),
     ("profile.json", "Profile", "The controls selected from the catalog for this assessment"),
     ("assessment-plan.json", "Assessment Plan", "What is assessed, how (TEST) and with what tool (ScubaGear)"),
     ("assessment-results.json", "Assessment Results",
@@ -241,18 +246,48 @@ def not_assessed_reason(control_id, results):
     return NOT_ASSESSED_REASONS.get(result, f"ScubaGear returned {result!r}, which is not a pass or fail.")
 
 
-def combine_catalogs(folder, dest):
-    """Write the SCuBA catalogs in `folder` (oscal/Controls) as one catalog file, which is what the
-    assessment results builder takes. With a single catalog this is a plain copy."""
-    files = sorted(Path(folder).glob("*.json"))
-    if not files:
-        raise ValueError(f"No SCuBA catalogs found in {folder}.")
+def policy_prefix(control_id):
+    """MS.TEAMS.1.1v1 -> ms.teams: which product a policy belongs to."""
+    return ".".join(control_id.split(".")[:2]).lower()
+
+
+def read_catalog(path):
+    return json.loads(Path(path).read_text(encoding="utf-8-sig"))["catalog"]
+
+
+def catalog_prefixes(path):
+    return {policy_prefix(c["id"]) for g in read_catalog(path).get("groups", []) for c in g.get("controls", [])}
+
+
+def catalog_product(path):
+    title = read_catalog(path).get("metadata", {}).get("title", "")
+    return product_name(title) or Path(path).stem
+
+
+def select_catalogs(results):
+    """(catalogs for the products this scan has results for, product names of the catalogs left out)."""
+    scanned = {policy_prefix(cid) for cid in results}
+    chosen, skipped = [], []
+    for f in sorted(CONTROLS_DIR.glob("*.json"), key=lambda f: (not f.name.startswith("EntraID"), f.name)):  # Entra ID first
+        (chosen if catalog_prefixes(f) & scanned else skipped).append(f)
+    if not chosen:
+        raise ValueError("None of the policies in this scan belong to a SCuBA baseline we have a catalog for. "
+                         "Upload the ScubaResults JSON file from your ScubaGear output.")
+    return chosen, [catalog_product(f) for f in skipped]
+
+
+def combine_catalogs(files, dest):
+    """Write the chosen SCuBA catalogs as one catalog file, which is what the assessment results builder
+    takes. With a single catalog this is a plain copy."""
     if len(files) == 1:
         shutil.copy(files[0], dest)
         return
-    combined = json.loads(files[0].read_text(encoding="utf-8-sig"))
+    combined = json.loads(Path(files[0]).read_text(encoding="utf-8-sig"))
     for f in files[1:]:
-        combined["catalog"]["groups"] += json.loads(f.read_text(encoding="utf-8-sig"))["catalog"].get("groups", [])
+        combined["catalog"]["groups"] += read_catalog(f).get("groups", [])
+    names = [catalog_product(f) for f in files]
+    combined["catalog"]["uuid"] = str(uuid.uuid5(ATTEST_NS, "combined-catalog:" + "|".join(Path(f).name for f in files)))
+    combined["catalog"]["metadata"]["title"] = "CISA SCuBA baselines: " + ", ".join(names)
     Path(dest).write_text(json.dumps(combined), encoding="utf-8")
 
 
@@ -266,17 +301,21 @@ def pipeline_message(stderr):
 
 def process_scan(name, raw):
     """Validate a scan file and run it through the pipeline. Returns (Assistant over the new findings,
-    ScubaGear's result per policy, {OSCAL file name: parsed document}).
+    ScubaGear's result per policy, {OSCAL file name: parsed document}, products left out of the scan).
 
     Raises ValueError with a message for the user when the file is rejected."""
     results = scan_results(check_scan(name, raw))
+    catalogs, skipped = select_catalogs(results)
     env = {**os.environ, "PYTHONIOENCODING": "utf-8"}
     with tempfile.TemporaryDirectory(prefix="scuba-upload-") as tmp:
         tmp = Path(tmp)
         (tmp / SCAN_FILE).write_bytes(raw)
         # The builder links its outputs to its inputs by relative path, which fails on Windows when the
         # temp folder and the repo are on different drives, so every file it links to lives in tmp.
-        combine_catalogs(CONTROLS_DIR, tmp / "catalog.json")
+        (tmp / "catalogs").mkdir()
+        for i, f in enumerate(catalogs):   # numbered so the comparison keeps this order (Entra ID first)
+            shutil.copy(f, tmp / "catalogs" / f"{i:02d}-{f.name}")
+        combine_catalogs(catalogs, tmp / "catalog.json")
         steps = [
             ("convert the scan to OSCAL", [
                 ROOT / "pipeline" / "make_assessment_results.py", "--results", tmp / SCAN_FILE,
@@ -289,7 +328,7 @@ def process_scan(name, raw):
                 ROOT / "pipeline" / "make_poam.py", "--assessment-results", tmp / "assessment-results.json",
                 "--catalog", tmp / "catalog.json", "--out", tmp / "poam.json"]),
             ("compare the scan with the SCuBA catalog", [
-                ROOT / "comparison" / "compare_oscal.py", "--scuba", CONTROLS_DIR,
+                ROOT / "comparison" / "compare_oscal.py", "--scuba", tmp / "catalogs",
                 "--scubagear", tmp / "assessment-results.json", "--output", tmp / "findings.json"]),
         ]
         for label, args in steps:
@@ -302,7 +341,7 @@ def process_scan(name, raw):
                 log.error("Upload pipeline step failed (%s): %s", label, r.stderr)
                 raise ValueError(f"Couldn't {label}: {pipeline_message(r.stderr)}")
         oscal = {f: json.loads((tmp / f).read_text(encoding="utf-8")) for f, _, _ in OSCAL_FILES if (tmp / f).exists()}
-        return Assistant(tmp / "findings.json"), results, oscal  # reads everything it needs now, so the folder can go
+        return Assistant(tmp / "findings.json"), results, oscal, skipped  # reads everything it needs now
 
 
 def reset_for_new_data():
@@ -320,7 +359,7 @@ def load_scan(name, raw):
     """Process a scan and, if it is accepted, make it this session's scan."""
     try:
         with st.spinner("Processing the scan…"):
-            new_assistant, results, oscal = process_scan(name, raw)
+            new_assistant, results, oscal, skipped = process_scan(name, raw)
     except ValueError as exc:
         st.session_state.upload_error = str(exc)
         return
@@ -329,7 +368,7 @@ def load_scan(name, raw):
         st.session_state.upload_error = "The scan couldn't be processed. Check that the file is ScubaGear output."
         return
     st.session_state.upload = {"name": name, "assistant": new_assistant, "scan_results": results,
-                               "oscal": oscal, "raw": raw}
+                               "oscal": oscal, "raw": raw, "skipped_products": skipped}
     st.session_state.upload_error = None
     reset_for_new_data()
     st.session_state.flash = f"Loaded the scan for {new_assistant.info.get('tenant') or 'your tenant'}."
@@ -628,8 +667,19 @@ def open_control(control_id):
 
 
 def baseline_map(findings):
-    """Every policy in the baseline, one row per SCuBA section, one cell per policy, coloured by result.
-    Selecting a cell opens that control's details."""
+    """Every policy in the scanned baselines: a block per product, one row per SCuBA section, one cell per
+    policy, coloured by result. Selecting a cell opens that control's details."""
+    products = list(dict.fromkeys(f.product for f in findings))
+    for product in products:
+        if len(products) > 1:
+            in_product = [f for f in findings if f.product == product]
+            failed = sum(f.status == "FAIL" for f in in_product)
+            st.html(f'<p class="scb-product">{html.escape(product)}<span>{len(in_product)} policies, '
+                    f'{failed} failing</span></p>')
+        product_map([f for f in findings if f.product == product])
+
+
+def product_map(findings):
     sections = {}
     for f in findings:
         section, _ = policy_number(f.control_id)
@@ -671,6 +721,7 @@ def control_facts(f, key_prefix):
             status_badge(f.status, label=f"ScubaGear: {label}" if f.status != "NOT ASSESSED" else None,
                          scuba_result=f.scuba_result)
             st.badge(f.obligation, color="gray")
+            st.badge(f.product, color="blue")
             st.badge(f.group, color="gray")
         st.markdown("**Requirement**")
         requirement(f.requirement)
@@ -837,7 +888,7 @@ st.html(STYLE)
 
 with st.sidebar:
     st.markdown("**SCuBA posture assistant**")
-    st.caption("Checks a Microsoft Entra ID tenant against the CISA SCuBA baseline.")
+    st.caption("Checks a Microsoft 365 tenant against the CISA SCuBA baselines.")
     if problem:
         st.badge("AI offline", color="red")
         st.caption("Questions and analyst notes are unavailable. The PDF report shows verified results only.")
@@ -849,8 +900,8 @@ with st.sidebar:
 # --- Upload panel: shown until a scan is loaded --------------------------------
 if st.session_state.upload is None:
     st.title("SCuBA posture assistant", anchor=False)
-    st.caption("Turn a ScubaGear scan into validated NIST OSCAL: see where your Microsoft Entra ID tenant stands "
-               "against the CISA SCuBA baseline, what to fix first, and download the OSCAL assessment results and "
+    st.caption("Turn a ScubaGear scan into validated NIST OSCAL: see where your Microsoft 365 tenant stands "
+               "against the CISA SCuBA baselines, product by product, what to fix first, and download the OSCAL assessment results and "
                "POA&M. Ask questions and generate a report, with every status taken from the scan.")
     with st.container(border=True):
         st.subheader("Upload your ScubaGear results", anchor=False)
@@ -869,14 +920,15 @@ if st.session_state.upload is None:
             st.button("Try the sample scan", type="tertiary", on_click=request_sample)
         with st.expander("Where do I find this file?"):
             st.markdown(
-                "1. Run ScubaGear in PowerShell, for example `Invoke-SCuBA -ProductNames aad`.\n"
+                "1. Run ScubaGear in PowerShell, for example "
+                "`Invoke-SCuBA -ProductNames aad, defender, exo, powerplatform, sharepoint, teams`.\n"
                 "2. Open the output folder it creates, named like `M365BaselineConformance_<date>`.\n"
                 "3. Upload the **ScubaResults** JSON file from that folder (`ScubaResults.json`, or "
                 "`ScubaResults_<id>.json` in newer versions).")
 
     st.markdown(
         "**What you'll get**\n\n"
-        "- **Overview:** every policy in the baseline at a glance, and what to fix first\n"
+        "- **Overview:** every policy in the scanned baselines at a glance, by product, and what to fix first\n"
         "- **Findings:** each failed control with what the scan found and how to fix it\n"
         "- **Questions:** ask about the scan; answers list the controls they rely on\n"
         "- **Report:** a PDF compliance report to share\n"
@@ -896,6 +948,8 @@ failures = prioritized_failures(findings)
 high_priority = [f for f in failures if f.priority == "high"]
 unassessed = [f for f in findings if f.status == "NOT ASSESSED"]
 results_by_id = st.session_state.upload.get("scan_results", {})
+products = info.get("products") or list(dict.fromkeys(f.product for f in findings))
+skipped_products = st.session_state.upload.get("skipped_products") or []
 age = scan_age_days(info.get("scan_time"))
 scanned = format_time(info.get("scan_time"))
 if st.session_state.flash:
@@ -917,9 +971,12 @@ with st.sidebar:
 
 # The tenant is the subject of the page, so it is the title.
 st.title(info.get("domain") or info.get("tenant") or "Your tenant", anchor=False)
-st.caption(f"Microsoft Entra ID assessed against the CISA SCuBA baseline, from a ScubaGear "
+st.caption(f"{', '.join(products)} assessed against the CISA SCuBA baselines, from a ScubaGear "
            f"{info.get('tool_version') or ''} scan on {scanned}, converted to OSCAL. Statuses come from the scan; "
            "anything the AI writes is labelled as AI.")
+if skipped_products:
+    st.caption(f"Not in this scan, so left out: {', '.join(skipped_products)}. Run ScubaGear with those products "
+               "to include them.")
 if age is not None and age > STALE_SCAN_DAYS:
     st.warning(f"**This scan is {age} days old.** The tenant's settings may have changed since; re-run "
                "ScubaGear for an up-to-date picture.", icon=":material/history:")
@@ -931,7 +988,8 @@ tab_overview, tab_findings, tab_chat, tab_report, tab_oscal = st.tabs(
 
 # Overview: the verdict, the whole baseline at a glance, and what to fix first
 with tab_overview:
-    verdict = (f"{summary['total']} controls: {summary['passed']} pass, {summary['failed']} fail, "
+    across = f" across {len(products)} products" if len(products) > 1 else ""
+    verdict = (f"{summary['total']} controls{across}: {summary['passed']} pass, {summary['failed']} fail, "
                f"{summary['not_assessed']} not assessed.")
     if failures:
         recommended = len(failures) - len(high_priority)
@@ -942,6 +1000,17 @@ with tab_overview:
     st.html('<div class="scb-legend">' + "".join(
         f'<span><i class="scb-sw-{MAP_CLASS[label]}"></i>{label} {n}</span>' for label, n in counts.items())
         + "</div>")
+    if len(products) > 1:
+        by_product = []
+        for product in products:
+            fs = [f for f in findings if f.product == product]
+            labels = [result_badge(f.status, f.scuba_result)[0] for f in fs]
+            by_product.append({"Product": product, "Controls": len(fs), "Pass": labels.count("Pass"),
+                               "Fail": labels.count("Fail"), "Warning": labels.count("Warning"),
+                               "Not assessed": labels.count("Not assessed"),
+                               "Required failing": sum(f.priority == "high" for f in fs)})
+        st.dataframe(by_product, hide_index=True,
+                     column_config={"Product": st.column_config.TextColumn(width="medium")})
     baseline_map(findings)
     st.caption("Select a policy to see its requirement, what the scan found and how to fix it.")
 
@@ -968,7 +1037,7 @@ with tab_overview:
                    + (": " + " and ".join(p for p in parts if p) if any(parts) else "") + ". Check them by hand.")
         attested = st.session_state.attestations
         st.dataframe(
-            [{"Control": f.control_id, "Title": f.title, "Obligation": f.obligation, "Why": why,
+            [{"Control": f.control_id, "Product": f.product, "Title": f.title, "Obligation": f.obligation, "Why": why,
               "Attested": (f"{attested[f.control_id]['result']} ({attested[f.control_id]['reviewer']})"
                            if f.control_id in attested else "")}
              for f, why in zip(unassessed, reasons)],
@@ -988,10 +1057,14 @@ with tab_findings:
         with st.container(horizontal=True, vertical_alignment="bottom", gap="medium"):
             priority = st.segmented_control("Obligation", ["All", "Required", "Recommended"], default="All",
                                             required=True, key="filter_priority")
-            area = st.selectbox("Area", ["All areas", *sorted({f.group for f in failures})], key="filter_area",
+            failing_products = list(dict.fromkeys(f.product for f in failures))
+            product = (st.selectbox("Product", ["All products", *failing_products], key="filter_product", width=260)
+                       if len(products) > 1 else "All products")
+            in_product = [f for f in failures if product == "All products" or f.product == product]
+            area = st.selectbox("Area", ["All areas", *sorted({f.group for f in in_product})], key="filter_area",
                                 width=320)
         wanted = {"Required": "high", "Recommended": "moderate"}.get(priority)
-        shown = [f for f in failures if wanted is None or f.priority == wanted]
+        shown = [f for f in in_product if wanted is None or f.priority == wanted]
         shown = [f for f in shown if area == "All areas" or f.group == area]
         st.caption(f"Showing {len(shown)} of {len(failures)} failed controls. Open one to see what the scan found "
                    "and how to fix it.")
@@ -1005,19 +1078,20 @@ with tab_findings:
 
     st.subheader("All controls", anchor=False)
     with st.container(horizontal=True, vertical_alignment="bottom", gap="medium"):
-        query = st.text_input("Search", placeholder="Control ID, title or area", type="search", live=True,
+        query = st.text_input("Search", placeholder="Control ID, product, title or area", type="search", live=True,
                               icon=":material/search:", key="controls_search", width=320)
         picked = st.pills("Status", ["Pass", "Fail", "Warning", "Not assessed"], selection_mode="multi",
                           key="controls_status")
-    rows = [{"Control": f.control_id, "Title": f.title, "Area": f.group, "Obligation": f.obligation,
-             "Status": result_badge(f.status, f.scuba_result)[0]} for f in findings]
+    rows = [{"Control": f.control_id, "Product": f.product, "Title": f.title, "Area": f.group,
+             "Obligation": f.obligation, "Status": result_badge(f.status, f.scuba_result)[0]} for f in findings]
     q = (query or "").strip().lower()
-    rows = [r for r in rows if (not q or q in f"{r['Control']} {r['Title']} {r['Area']}".lower())
+    rows = [r for r in rows if (not q or q in f"{r['Control']} {r['Product']} {r['Title']} {r['Area']}".lower())
             and (not picked or r["Status"] in picked)]
     st.caption(f"Showing {len(rows)} of {len(findings)} controls.")
     if rows:
         st.dataframe(styled_status(rows), hide_index=True,
-                     column_config={"Control": st.column_config.TextColumn(width=115),
+                     column_config={"Control": st.column_config.TextColumn(width=140),
+                                    "Product": st.column_config.TextColumn(width="small"),
                                     "Title": st.column_config.TextColumn(width="large"),
                                     "Area": st.column_config.TextColumn(width="medium"),
                                     "Obligation": st.column_config.TextColumn(width=95),
@@ -1031,7 +1105,7 @@ with tab_chat:
         st.caption("Answers are written by the AI from the verified results, and list the controls they rely on.",
                    width="stretch")
         st.button("Executive summary", disabled=bool(problem), on_click=queue,
-                  args=("summary", "Give me an executive summary of our Entra ID security posture."))
+                  args=("summary", "Give me an executive summary of our Microsoft 365 security posture."))
         st.button("Clear questions", type="tertiary", on_click=clear_conversation,
                   disabled=not st.session_state.messages)
 

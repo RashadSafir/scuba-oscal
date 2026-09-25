@@ -199,7 +199,7 @@ if __name__ == "__main__":
     ap.add_argument("--findings", default=fm.FINDINGS, help="findings.json from comparison/compare_oscal.py")
     ap.add_argument("question", nargs="*")
     args = ap.parse_args()
-    q = " ".join(args.question) or "Give me an executive summary of our Entra ID security posture."
+    q = " ".join(args.question) or "Give me an executive summary of our Microsoft 365 security posture."
     reply = Assistant(args.findings).answer(q)
     print(reply["text"], "\n")
     print("Verified facts behind this answer (from OSCAL):")

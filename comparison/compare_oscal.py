@@ -18,6 +18,7 @@ The parsers turn OSCAL into plain records, so the comparison never touches OSCAL
 """
 import argparse
 import json
+import re
 import sys
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
@@ -48,6 +49,7 @@ class Control:
     remediation_guidance: str | None   # how to fix it
     nist: list[str] = field(default_factory=list)          # related NIST SP 800-53 controls
     source: str = ""                   # catalog file name
+    product: str = ""                  # e.g. "Microsoft Entra ID", from the catalog title
 
 
 @dataclass(frozen=True)
@@ -105,6 +107,20 @@ def _text(parts, *names):
     return None
 
 
+PRODUCT_TITLE = re.compile(r"CISA SCuBA (.+?) \((MS\.[A-Z]+)\) Baseline")
+
+
+def product_name(catalog_title):
+    """ "CISA SCuBA Teams (MS.TEAMS) Baseline - all policies" -> "Teams"; "" if the title has another form."""
+    m = PRODUCT_TITLE.search(catalog_title or "")
+    return m[1] if m else ""
+
+
+def product_of(control):
+    """The product a control belongs to: from its catalog title, else its id prefix (ms.teams.1.1v1 -> MS.TEAMS)."""
+    return control.product or ".".join(control.control_id.split(".")[:2]).upper()
+
+
 def parse_catalog(path):
     path = Path(path)
     data = load_json(path)
@@ -113,6 +129,7 @@ def parse_catalog(path):
         raise CompareError(f"{path.name} is not an OSCAL catalog (no top-level 'catalog' object)")
 
     controls = {}
+    product = product_name((catalog.get("metadata") or {}).get("title"))
 
     def add(c, group):
         cid = (c.get("id") or "").strip()
@@ -133,7 +150,7 @@ def parse_catalog(path):
             recommendation=_text(parts, "recommendation", "recommendations"),
             remediation_guidance=_text(parts, "remediation"),
             nist=[link["text"] for link in c.get("links", []) if link.get("rel") == "related" and link.get("text")],
-            source=path.name)
+            source=path.name, product=product)
 
     def walk(node, group):
         for g in node.get("groups", []):
@@ -265,6 +282,7 @@ def combine(control, result, scubagear_source):
         "oscal_control_id": control.control_id,
         "title": control.title,
         "group": control.group,
+        "product": product_of(control),
         "obligation": control.obligation,
         "status": result.status if result else NOT_ASSESSED,
         "scubagear_result": result.scubagear_result if result else None,

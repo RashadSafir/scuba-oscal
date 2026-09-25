@@ -1,8 +1,8 @@
 # scuba-oscal
 
-We converted the CISA SCuBA Microsoft Entra ID baseline (MS.AAD) into an OSCAL Catalog and Profile, with each policy linked to its NIST SP 800-53 controls. When a user uploads a ScubaGear results file, the app converts it into OSCAL Assessment Results, links every observation and finding to its SCuBA control, and generates an OSCAL POA&M for the failed requirements. Every file is checked against the OSCAL 1.1.2 models, and the original scan is recorded with its SHA-256 hash so auditors can check the evidence was not altered.
+We converted the CISA SCuBA baselines for Microsoft 365 (Entra ID, Defender, Exchange Online, Power BI, Power Platform, SharePoint, Teams and the Security Suite) into OSCAL catalogs, with a Profile per assessment, with each policy linked to its NIST SP 800-53 controls. When a user uploads a ScubaGear results file, the app converts it into OSCAL Assessment Results, links every observation and finding to its SCuBA control, and generates an OSCAL POA&M for the failed requirements. Every file is checked against the OSCAL 1.1.2 models, and the original scan is recorded with its SHA-256 hash so auditors can check the evidence was not altered.
 
-The app shows pass, fail and not-assessed counts and a "Fix first" list, lets people inspect evidence and fix steps, answers questions with the AI (citing the controls and OSCAL findings behind each answer), and produces a PDF report. Statuses always come from the scan; anything the AI writes is labelled as analysis.
+The app shows pass, fail and not-assessed counts, overall and by product, and a "Fix first" list, lets people inspect evidence and fix steps, answers questions with the AI (citing the controls and OSCAL findings behind each answer), and produces a PDF report. Statuses always come from the scan; anything the AI writes is labelled as analysis.
 
 ## Run it
 
@@ -26,7 +26,7 @@ All OSCAL files ──► validate_oscal.py (OSCAL 1.1.2 models, unique uuids)
 
 | Folder | What is there |
 |---|---|
-| `oscal/Controls/` | The SCuBA MS.AAD catalog in OSCAL (34 policies) |
+| `oscal/Controls/` | The SCuBA catalogs in OSCAL, one per product (128 policies) |
 | `oscal/` | Generated OSCAL files and `findings.json` for the committed sample |
 | `pipeline/` | Catalog, profile, assessment results, POA&M builders and the validator |
 | `comparison/` | `compare_oscal.py`: joins the catalog with the results, control by control |
@@ -38,7 +38,9 @@ Uuids are derived from the inputs (uuid5), so the same scan always gives the sam
 
 ## Scope
 
-The baseline in scope is Microsoft Entra ID (MS.AAD). Another SCuBA baseline can be added by putting its OSCAL catalog in `oscal/Controls/`; the pipeline reads every catalog there.
+An upload is assessed against the catalogs for the products the scan covers: a catalog is used when the scan has results for its policy prefix (for example MS.TEAMS). Products the scan did not include are left out and named on the page, rather than counted as not assessed. A new baseline can be added by putting its OSCAL catalog in `oscal/Controls/`.
+
+The committed files in `oscal/` (assessment results, POA&M, profile, findings) are an Entra ID example built from the sample scan.
 
 ## Data handling
 

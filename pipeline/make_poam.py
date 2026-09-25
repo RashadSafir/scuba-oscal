@@ -95,7 +95,7 @@ def build(results_path, catalog_path, out_dir="."):
     return PlanOfActionAndMilestones(
         uuid=str(uuid.uuid5(NS, f"poam:{ar_id}")),
         metadata=Metadata(
-            title="SCuBA Microsoft Entra ID (MS.AAD) Plan of Action and Milestones",
+            title=f"SCuBA Plan of Action and Milestones: {catalog_title}",
             last_modified=now_utc(), version="0.1.0", oscal_version=OSCAL_VERSION,
             links=[Link(href=rel_href(results_path, out_dir), rel="reference",
                         text="Assessment results this POA&M was built from"),

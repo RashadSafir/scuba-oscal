@@ -47,6 +47,7 @@ class Finding:
     finding_uuid: str = ""       # assessment-results finding
     observation_uuid: str = ""   # its observation (the evidence)
     risk_uuid: str = ""          # its risk, failures only
+    product: str = ""            # e.g. "Microsoft Entra ID", "Teams"
 
     def to_dict(self):
         return asdict(self)
@@ -83,7 +84,8 @@ def load_findings(findings_path=FINDINGS):
             oscal_control_id=a.get("oscal_control_id") or "",
             finding_uuid=oscal.get("finding_uuid") or "",
             observation_uuid=next(iter(oscal.get("observation_uuids") or []), ""),
-            risk_uuid=next(iter(oscal.get("risk_uuids") or []), "")))
+            risk_uuid=next(iter(oscal.get("risk_uuids") or []), ""),
+            product=a.get("product") or ".".join(a["control_id"].split(".")[:2]).upper()))
     return out
 
 
@@ -91,9 +93,12 @@ def load_assessment_info(findings_path=FINDINGS):
     """Scan-level facts safe to show the AI: tenant display name, scan time, tool version.
 
     findings.json carries no tenant id or report uuid; the AI does not need them."""
-    scan = _read(findings_path).get("metadata", {}).get("scan", {})
+    doc = _read(findings_path)
+    scan = doc.get("metadata", {}).get("scan", {})
+    products = [a.get("product") or ".".join(a["control_id"].split(".")[:2]).upper() for a in doc["assessments"]]
     return dict(tenant=scan.get("tenant") or "", domain=scan.get("domain") or "",
-                scan_time=scan.get("scan_time") or "", tool_version=scan.get("tool_version") or "")
+                scan_time=scan.get("scan_time") or "", tool_version=scan.get("tool_version") or "",
+                products=list(dict.fromkeys(products)))
 
 
 def summarize(findings):

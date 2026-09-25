@@ -1,6 +1,7 @@
 """Build an OSCAL Profile: the controls from our catalog that are in scope for an assessment.
 
-Input  : EntraID-catalog-full.json   our OSCAL catalog of SCuBA MS.AAD policies
+Input  : a SCuBA OSCAL catalog      e.g. oscal/Controls/EntraID-catalog-full.json (the default), or
+                                     several products' catalogs combined into one (as the app does)
 Output : profile.json                imports the catalog and selects the in-scope controls
 
 A profile is how OSCAL tailors a catalog. By default every catalog control is selected. With
@@ -47,7 +48,7 @@ def build(catalog_path, out_dir=".", obligation=None, href=None):
     return Profile(
         uuid=str(uuid.uuid5(NS, f"profile:{digest}:{scope}")),
         metadata=Metadata(
-            title=f"SCuBA Microsoft Entra ID (MS.AAD) profile: {'all policies' if obligation is None else obligation + ' policies'}",
+            title=f"SCuBA Profile ({'all policies' if obligation is None else obligation + ' policies'}): {title}",
             last_modified=now_utc(), version="0.1.0", oscal_version=OSCAL_VERSION,
             links=[Link(href=href, rel="reference", text=title)],
             remarks=f"Selects {len(selected)} of {len(controls)} controls from the catalog."),
