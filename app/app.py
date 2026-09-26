@@ -818,7 +818,9 @@ def render_changes_tab():
         if changed[kind]:
             st.markdown(f"**{title} ({len(changed[kind])})**: {explain}")
             for f in changed[kind]:
-                worklist_row(f, f"changes_{kind.replace(' ', '_')}") if f.status == "FAIL" else \
+                if f.status == "FAIL":
+                    worklist_row(f, f"changes_{kind.replace(' ', '_')}")
+                else:
                     st.markdown(f"- `{f.control_id}` {f.title}")
 
     if changed["resolved"]:
