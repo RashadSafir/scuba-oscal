@@ -32,7 +32,7 @@ All OSCAL files ──► validate_oscal.py (OSCAL 1.1.2 models, unique uuids)
 | `comparison/` | `compare_oscal.py`: joins the catalog with the results, control by control |
 | `ai/` | The AI layer: facts from `findings.json`, prompts, Azure OpenAI client |
 | `app/` | The Streamlit app and the PDF report |
-| `data/sample/` | Fictional ScubaGear scans: `scuba_results_sample.json`, `scuba_results_sample_2.json` (contosodemo), its rescan nine days later `scuba_results_sample_2_rescan.json`, and the first contosodemo scan's OSCAL assessment results for the Changes tab |
+| `data/sample/` | Sample ScubaGear scans (from CISA): scuba_results_sample.json, |
 | `config/fix_first.toml` | The Fix first weights (draft judgement calls for the team to review) |
 
 Each POA&M item has three standard milestones (plan the change, apply it, verify with a ScubaGear rescan) and no dates: in the app's Findings tab, under Plan of action, the team sets a target date per item, which is added to the downloaded POA&M as the item's deadline.
